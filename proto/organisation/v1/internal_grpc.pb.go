@@ -4,7 +4,7 @@
 // - protoc             (unknown)
 // source: proto/organisation/v1/internal.proto
 
-package v1
+package organisationv1
 
 import (
 	context "context"

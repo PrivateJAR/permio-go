@@ -4,7 +4,7 @@
 // - protoc             (unknown)
 // source: proto/permissions/v1/permissions.proto
 
-package v1
+package permissionsv1
 
 import (
 	context "context"
