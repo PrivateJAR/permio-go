@@ -47,17 +47,17 @@ type PermissionsServiceClient interface {
 	// Required Permissions:
 	//   - permission.create on /organisation/{organisation_id}
 	CreatePermission(ctx context.Context, in *CreatePermissionRequest, opts ...grpc.CallOption) (*Permission, error)
-	// GetPermission returns a permission by ID.
+	// GetPermission returns a permission by name.
 	// Required Permissions:
-	//   - permission.get on /organisation/{organisation_id}/permission/{id}
+	//   - permission.get on /organisation/{organisation_id}/permission/{name}
 	GetPermission(ctx context.Context, in *GetPermissionRequest, opts ...grpc.CallOption) (*Permission, error)
 	// UpdatePermission updates a permission. It will return not found if the permission does not exist.
 	// Required Permissions:
-	//   - permission.update on /organisation/{organisation_id}/permission/{id}
+	//   - permission.update on /organisation/{organisation_id}/permission/{name}
 	UpdatePermission(ctx context.Context, in *UpdatePermissionRequest, opts ...grpc.CallOption) (*Permission, error)
 	// DeletePermission deletes a permission. It is idempotent and will return ok whether the permission existed or not.
 	// Required Permissions:
-	//   - permission.delete on /organisation/{organisation_id}/permission/{id}
+	//   - permission.delete on /organisation/{organisation_id}/permission/{name}
 	DeletePermission(ctx context.Context, in *DeletePermissionRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// ListPermissions returns a list of permissions.
 	// Required Permissions:
@@ -66,7 +66,7 @@ type PermissionsServiceClient interface {
 	// CreateRole creates a new role. It is idempotent and will update the role if it already exists.
 	// Required Permissions:
 	//   - role.create on /organisation/{organisation_id}
-	//   - permission.get on /organisation/{organisation_id}/permission/{permission_id} for each permission in the role
+	//   - permission.get on /organisation/{organisation_id}/permission/{permission_name} for each permission in the role
 	CreateRole(ctx context.Context, in *CreateRoleRequest, opts ...grpc.CallOption) (*Role, error)
 	// GetRole returns a role by ID.
 	// Required Permissions:
@@ -86,7 +86,7 @@ type PermissionsServiceClient interface {
 	ListRoles(ctx context.Context, in *ListRolesRequest, opts ...grpc.CallOption) (*ListRolesResponse, error)
 	// GrantUserPermissionsAndRolesOnResource assigns permissions and roles to a user on a resource. It is additive and will not remove existing permissions or roles.
 	// Required Permissions:
-	//   - permission.get on /organisation/{organisation_id}/permission/{permission_id} for each permission
+	//   - permission.get on /organisation/{organisation_id}/permission/{permission_name} for each permission
 	//   - role.get on /organisation/{organisation_id}/role/{role_id} for each role
 	//   - principal.assignment.create on /organisation/{organisation_id}/principal/{user_id}
 	GrantUserPermissionsAndRolesOnResource(ctx context.Context, in *GrantUserPermissionsAndRolesOnResourceRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -283,17 +283,17 @@ type PermissionsServiceServer interface {
 	// Required Permissions:
 	//   - permission.create on /organisation/{organisation_id}
 	CreatePermission(context.Context, *CreatePermissionRequest) (*Permission, error)
-	// GetPermission returns a permission by ID.
+	// GetPermission returns a permission by name.
 	// Required Permissions:
-	//   - permission.get on /organisation/{organisation_id}/permission/{id}
+	//   - permission.get on /organisation/{organisation_id}/permission/{name}
 	GetPermission(context.Context, *GetPermissionRequest) (*Permission, error)
 	// UpdatePermission updates a permission. It will return not found if the permission does not exist.
 	// Required Permissions:
-	//   - permission.update on /organisation/{organisation_id}/permission/{id}
+	//   - permission.update on /organisation/{organisation_id}/permission/{name}
 	UpdatePermission(context.Context, *UpdatePermissionRequest) (*Permission, error)
 	// DeletePermission deletes a permission. It is idempotent and will return ok whether the permission existed or not.
 	// Required Permissions:
-	//   - permission.delete on /organisation/{organisation_id}/permission/{id}
+	//   - permission.delete on /organisation/{organisation_id}/permission/{name}
 	DeletePermission(context.Context, *DeletePermissionRequest) (*emptypb.Empty, error)
 	// ListPermissions returns a list of permissions.
 	// Required Permissions:
@@ -302,7 +302,7 @@ type PermissionsServiceServer interface {
 	// CreateRole creates a new role. It is idempotent and will update the role if it already exists.
 	// Required Permissions:
 	//   - role.create on /organisation/{organisation_id}
-	//   - permission.get on /organisation/{organisation_id}/permission/{permission_id} for each permission in the role
+	//   - permission.get on /organisation/{organisation_id}/permission/{permission_name} for each permission in the role
 	CreateRole(context.Context, *CreateRoleRequest) (*Role, error)
 	// GetRole returns a role by ID.
 	// Required Permissions:
@@ -322,7 +322,7 @@ type PermissionsServiceServer interface {
 	ListRoles(context.Context, *ListRolesRequest) (*ListRolesResponse, error)
 	// GrantUserPermissionsAndRolesOnResource assigns permissions and roles to a user on a resource. It is additive and will not remove existing permissions or roles.
 	// Required Permissions:
-	//   - permission.get on /organisation/{organisation_id}/permission/{permission_id} for each permission
+	//   - permission.get on /organisation/{organisation_id}/permission/{permission_name} for each permission
 	//   - role.get on /organisation/{organisation_id}/role/{role_id} for each role
 	//   - principal.assignment.create on /organisation/{organisation_id}/principal/{user_id}
 	GrantUserPermissionsAndRolesOnResource(context.Context, *GrantUserPermissionsAndRolesOnResourceRequest) (*emptypb.Empty, error)

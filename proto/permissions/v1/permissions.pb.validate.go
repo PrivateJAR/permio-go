@@ -3040,7 +3040,7 @@ func (m *GetPermissionRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Id
+	// no validation rules for Name
 
 	if len(errors) > 0 {
 		return GetPermissionRequestMultiError(errors)
@@ -3168,11 +3168,13 @@ func (m *UpdatePermissionRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Id
-
 	// no validation rules for Name
 
 	// no validation rules for Description
+
+	if m.NewName != nil {
+		// no validation rules for NewName
+	}
 
 	if len(errors) > 0 {
 		return UpdatePermissionRequestMultiError(errors)
@@ -3300,7 +3302,7 @@ func (m *DeletePermissionRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Id
+	// no validation rules for Name
 
 	if len(errors) > 0 {
 		return DeletePermissionRequestMultiError(errors)
