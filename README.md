@@ -5,7 +5,7 @@ Generated Protocol Buffer and gRPC code for Permio.
 ## Installation
 
 ```bash
-go get github.com/PrivateJAR/permio-go@v0.0.9
+go get github.com/PrivateJAR/permio-go@v0.0.10
 ```
 
 ## Usage
@@ -16,4 +16,4 @@ import "github.com/PrivateJAR/permio-go"
 
 ## Version
 
-v0.0.9
+v0.0.10
