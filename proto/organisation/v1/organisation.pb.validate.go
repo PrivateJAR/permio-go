@@ -3775,6 +3775,17 @@ func (m *CreateAPIKeyRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if _, ok := APIKeyAccess_name[int32(m.GetAccess())]; !ok {
+		err := CreateAPIKeyRequestValidationError{
+			field:  "Access",
+			reason: "value must be one of the defined enum values",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return CreateAPIKeyRequestMultiError(errors)
 	}
@@ -3941,6 +3952,8 @@ func (m *APIKey) validate(all bool) error {
 	}
 
 	// no validation rules for Invalidated
+
+	// no validation rules for Access
 
 	if len(errors) > 0 {
 		return APIKeyMultiError(errors)

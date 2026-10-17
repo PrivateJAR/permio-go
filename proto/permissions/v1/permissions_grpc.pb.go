@@ -37,6 +37,18 @@ const (
 	PermissionsService_GetAllAssignmentsForPrincipal_FullMethodName              = "/permio.permissions.v1.PermissionsService/GetAllAssignmentsForPrincipal"
 	PermissionsService_Check_FullMethodName                                      = "/permio.permissions.v1.PermissionsService/Check"
 	PermissionsService_GetTotalRolesAndPermissionsForOrganisation_FullMethodName = "/permio.permissions.v1.PermissionsService/GetTotalRolesAndPermissionsForOrganisation"
+	PermissionsService_BatchCheck_FullMethodName                                 = "/permio.permissions.v1.PermissionsService/BatchCheck"
+	PermissionsService_ListAccess_FullMethodName                                 = "/permio.permissions.v1.PermissionsService/ListAccess"
+	PermissionsService_ListPrincipalsWithAccess_FullMethodName                   = "/permio.permissions.v1.PermissionsService/ListPrincipalsWithAccess"
+	PermissionsService_CreateGroup_FullMethodName                                = "/permio.permissions.v1.PermissionsService/CreateGroup"
+	PermissionsService_GetGroup_FullMethodName                                   = "/permio.permissions.v1.PermissionsService/GetGroup"
+	PermissionsService_UpdateGroup_FullMethodName                                = "/permio.permissions.v1.PermissionsService/UpdateGroup"
+	PermissionsService_DeleteGroup_FullMethodName                                = "/permio.permissions.v1.PermissionsService/DeleteGroup"
+	PermissionsService_ListGroups_FullMethodName                                 = "/permio.permissions.v1.PermissionsService/ListGroups"
+	PermissionsService_AddGroupMembers_FullMethodName                            = "/permio.permissions.v1.PermissionsService/AddGroupMembers"
+	PermissionsService_RemoveGroupMembers_FullMethodName                         = "/permio.permissions.v1.PermissionsService/RemoveGroupMembers"
+	PermissionsService_ListGroupMembers_FullMethodName                           = "/permio.permissions.v1.PermissionsService/ListGroupMembers"
+	PermissionsService_ListGroupsForPrincipal_FullMethodName                     = "/permio.permissions.v1.PermissionsService/ListGroupsForPrincipal"
 )
 
 // PermissionsServiceClient is the client API for PermissionsService service.
@@ -112,6 +124,84 @@ type PermissionsServiceClient interface {
 	// Required Permissions:
 	//   - organisation.roles.and.permissions.total on /organisation/{organisation_id}
 	GetTotalRolesAndPermissionsForOrganisation(ctx context.Context, in *GetTotalRolesAndPermissionsForOrganisationRequest, opts ...grpc.CallOption) (*GetTotalRolesAndPermissionsForOrganisationResponse, error)
+	// BatchCheck checks whether a principal has the specified permissions on each of the specified resources and
+	// returns one result per resource, in request order. It evaluates exactly like Check (same resource URI inheritance,
+	// stored "_" wildcard and group rules, same fail-closed behaviour); a resource's result is allowed only if the
+	// principal has every requested permission on it.
+	// Required Permissions (the same as Check):
+	//   - permission.check on /organisation/{organisation_id}/project/{project_name}{resource_uri} for each resource
+	//   - permission.check on /organisation/{organisation_id}/project/{project_name}/principal/{principal_id}
+	BatchCheck(ctx context.Context, in *BatchCheckRequest, opts ...grpc.CallOption) (*BatchCheckResponse, error)
+	// ListAccess answers "where can this principal do this permission under under_uri?". It returns the scopes in which
+	// Check(principal_id, permission) passes for resources at or below under_uri, counting grants made to the principal
+	// directly, through roles, and through the groups the principal is a member of.
+	//   - If the principal holds the permission on under_uri itself (through a grant on under_uri, an ancestor, or a
+	//     stored "_" wildcard URI that matches it), covers_all is true and scopes is a single SUBTREE scope for
+	//     under_uri.
+	//   - Otherwise scopes lists the URIs of the grants below under_uri that confer the permission: SUBTREE for a
+	//     concrete URI (grants apply to the URI and everything below it) and PATTERN for a URI with "_" wildcard
+	//     segments. Scopes are ordered by uri and paginated.
+	//
+	// Required Permissions:
+	//   - permission.check on /organisation/{organisation_id}/project/{project_name}{under_uri}
+	//   - principal.assignment.get on /organisation/{organisation_id}/project/{project_name}/principal/{principal_id}
+	ListAccess(ctx context.Context, in *ListAccessRequest, opts ...grpc.CallOption) (*ListAccessResponse, error)
+	// ListPrincipalsWithAccess answers "who has access to resource_uri?". It lists the principals holding a grant on
+	// resource_uri, on an ancestor of it, or on a stored "_" wildcard URI that matches it; when permission is set, only
+	// grants that confer that permission count, so a principal is listed if and only if Check(principal, resource_uri,
+	// permission) passes through its own grants. Groups are listed as principals (is_group); with expand_groups their
+	// members are listed too, once per group, with via_group set. Entries are ordered by principal_id, then via_group,
+	// and paginated.
+	// Required Permissions:
+	//   - principal.list on /organisation/{organisation_id}/project/{project_name}
+	//   - principal.assignment.list on /organisation/{organisation_id}/project/{project_name}
+	ListPrincipalsWithAccess(ctx context.Context, in *ListPrincipalsWithAccessRequest, opts ...grpc.CallOption) (*ListPrincipalsWithAccessResponse, error)
+	// CreateGroup creates a group in a project. A group is a set of principals: grant permissions and roles to it with
+	// GrantUserPermissionsAndRolesOnResource using the principal ID "group:{name}" and every member holds them. Groups
+	// cannot contain groups. It returns ALREADY_EXISTS if the project already has a group with this name.
+	// Required Permissions:
+	//   - group.create on /organisation/{organisation_id}/project/{project_name}
+	CreateGroup(ctx context.Context, in *CreateGroupRequest, opts ...grpc.CallOption) (*Group, error)
+	// GetGroup returns a group by name.
+	// Required Permissions:
+	//   - group.get on /organisation/{organisation_id}/project/{project_name}/group/{name}
+	GetGroup(ctx context.Context, in *GetGroupRequest, opts ...grpc.CallOption) (*Group, error)
+	// UpdateGroup updates a group's description. A group's name cannot be changed, because "group:{name}" is the
+	// principal ID its grants are stored under. It returns NOT_FOUND if the group does not exist.
+	// Required Permissions:
+	//   - group.update on /organisation/{organisation_id}/project/{project_name}/group/{name}
+	UpdateGroup(ctx context.Context, in *UpdateGroupRequest, opts ...grpc.CallOption) (*Group, error)
+	// DeleteGroup deletes a group together with its memberships and every grant made to it, in one transaction. It is
+	// idempotent and returns ok whether the group existed or not.
+	// Required Permissions:
+	//   - group.delete on /organisation/{organisation_id}/project/{project_name}/group/{name}
+	//   - principal.assignment.delete on /organisation/{organisation_id}/project/{project_name}
+	DeleteGroup(ctx context.Context, in *DeleteGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// ListGroups returns the groups in a project, ordered by name.
+	// Required Permissions:
+	//   - group.list on /organisation/{organisation_id}/project/{project_name}
+	ListGroups(ctx context.Context, in *ListGroupsRequest, opts ...grpc.CallOption) (*ListGroupsResponse, error)
+	// AddGroupMembers adds up to 100 principals to a group. Principals that are already members are reported, not
+	// re-added. Principal IDs starting with "group:" are rejected (groups cannot be nested). A principal that is new to
+	// the organisation counts towards its unique principals, exactly as if it had been granted something.
+	// Required Permissions:
+	//   - group.member.add on /organisation/{organisation_id}/project/{project_name}/group/{name}
+	//   - principal.assignment.create on /organisation/{organisation_id}/project/{project_name}
+	AddGroupMembers(ctx context.Context, in *AddGroupMembersRequest, opts ...grpc.CallOption) (*AddGroupMembersResponse, error)
+	// RemoveGroupMembers removes up to 100 principals from a group. Principals that are not members are reported.
+	// Required Permissions:
+	//   - group.member.remove on /organisation/{organisation_id}/project/{project_name}/group/{name}
+	//   - principal.assignment.create on /organisation/{organisation_id}/project/{project_name}
+	RemoveGroupMembers(ctx context.Context, in *RemoveGroupMembersRequest, opts ...grpc.CallOption) (*RemoveGroupMembersResponse, error)
+	// ListGroupMembers returns a group's members, ordered by principal ID.
+	// Required Permissions:
+	//   - group.member.list on /organisation/{organisation_id}/project/{project_name}/group/{name}
+	ListGroupMembers(ctx context.Context, in *ListGroupMembersRequest, opts ...grpc.CallOption) (*ListGroupMembersResponse, error)
+	// ListGroupsForPrincipal returns the groups a principal is a member of in a project, ordered by name.
+	// Required Permissions:
+	//   - group.list on /organisation/{organisation_id}/project/{project_name}
+	//   - principal.assignment.list on /organisation/{organisation_id}/project/{project_name}/principal/{principal_id}
+	ListGroupsForPrincipal(ctx context.Context, in *ListGroupsForPrincipalRequest, opts ...grpc.CallOption) (*ListGroupsForPrincipalResponse, error)
 }
 
 type permissionsServiceClient struct {
@@ -275,6 +365,114 @@ func (c *permissionsServiceClient) GetTotalRolesAndPermissionsForOrganisation(ct
 	return out, nil
 }
 
+func (c *permissionsServiceClient) BatchCheck(ctx context.Context, in *BatchCheckRequest, opts ...grpc.CallOption) (*BatchCheckResponse, error) {
+	out := new(BatchCheckResponse)
+	err := c.cc.Invoke(ctx, PermissionsService_BatchCheck_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *permissionsServiceClient) ListAccess(ctx context.Context, in *ListAccessRequest, opts ...grpc.CallOption) (*ListAccessResponse, error) {
+	out := new(ListAccessResponse)
+	err := c.cc.Invoke(ctx, PermissionsService_ListAccess_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *permissionsServiceClient) ListPrincipalsWithAccess(ctx context.Context, in *ListPrincipalsWithAccessRequest, opts ...grpc.CallOption) (*ListPrincipalsWithAccessResponse, error) {
+	out := new(ListPrincipalsWithAccessResponse)
+	err := c.cc.Invoke(ctx, PermissionsService_ListPrincipalsWithAccess_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *permissionsServiceClient) CreateGroup(ctx context.Context, in *CreateGroupRequest, opts ...grpc.CallOption) (*Group, error) {
+	out := new(Group)
+	err := c.cc.Invoke(ctx, PermissionsService_CreateGroup_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *permissionsServiceClient) GetGroup(ctx context.Context, in *GetGroupRequest, opts ...grpc.CallOption) (*Group, error) {
+	out := new(Group)
+	err := c.cc.Invoke(ctx, PermissionsService_GetGroup_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *permissionsServiceClient) UpdateGroup(ctx context.Context, in *UpdateGroupRequest, opts ...grpc.CallOption) (*Group, error) {
+	out := new(Group)
+	err := c.cc.Invoke(ctx, PermissionsService_UpdateGroup_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *permissionsServiceClient) DeleteGroup(ctx context.Context, in *DeleteGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, PermissionsService_DeleteGroup_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *permissionsServiceClient) ListGroups(ctx context.Context, in *ListGroupsRequest, opts ...grpc.CallOption) (*ListGroupsResponse, error) {
+	out := new(ListGroupsResponse)
+	err := c.cc.Invoke(ctx, PermissionsService_ListGroups_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *permissionsServiceClient) AddGroupMembers(ctx context.Context, in *AddGroupMembersRequest, opts ...grpc.CallOption) (*AddGroupMembersResponse, error) {
+	out := new(AddGroupMembersResponse)
+	err := c.cc.Invoke(ctx, PermissionsService_AddGroupMembers_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *permissionsServiceClient) RemoveGroupMembers(ctx context.Context, in *RemoveGroupMembersRequest, opts ...grpc.CallOption) (*RemoveGroupMembersResponse, error) {
+	out := new(RemoveGroupMembersResponse)
+	err := c.cc.Invoke(ctx, PermissionsService_RemoveGroupMembers_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *permissionsServiceClient) ListGroupMembers(ctx context.Context, in *ListGroupMembersRequest, opts ...grpc.CallOption) (*ListGroupMembersResponse, error) {
+	out := new(ListGroupMembersResponse)
+	err := c.cc.Invoke(ctx, PermissionsService_ListGroupMembers_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *permissionsServiceClient) ListGroupsForPrincipal(ctx context.Context, in *ListGroupsForPrincipalRequest, opts ...grpc.CallOption) (*ListGroupsForPrincipalResponse, error) {
+	out := new(ListGroupsForPrincipalResponse)
+	err := c.cc.Invoke(ctx, PermissionsService_ListGroupsForPrincipal_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PermissionsServiceServer is the server API for PermissionsService service.
 // All implementations must embed UnimplementedPermissionsServiceServer
 // for forward compatibility
@@ -348,6 +546,84 @@ type PermissionsServiceServer interface {
 	// Required Permissions:
 	//   - organisation.roles.and.permissions.total on /organisation/{organisation_id}
 	GetTotalRolesAndPermissionsForOrganisation(context.Context, *GetTotalRolesAndPermissionsForOrganisationRequest) (*GetTotalRolesAndPermissionsForOrganisationResponse, error)
+	// BatchCheck checks whether a principal has the specified permissions on each of the specified resources and
+	// returns one result per resource, in request order. It evaluates exactly like Check (same resource URI inheritance,
+	// stored "_" wildcard and group rules, same fail-closed behaviour); a resource's result is allowed only if the
+	// principal has every requested permission on it.
+	// Required Permissions (the same as Check):
+	//   - permission.check on /organisation/{organisation_id}/project/{project_name}{resource_uri} for each resource
+	//   - permission.check on /organisation/{organisation_id}/project/{project_name}/principal/{principal_id}
+	BatchCheck(context.Context, *BatchCheckRequest) (*BatchCheckResponse, error)
+	// ListAccess answers "where can this principal do this permission under under_uri?". It returns the scopes in which
+	// Check(principal_id, permission) passes for resources at or below under_uri, counting grants made to the principal
+	// directly, through roles, and through the groups the principal is a member of.
+	//   - If the principal holds the permission on under_uri itself (through a grant on under_uri, an ancestor, or a
+	//     stored "_" wildcard URI that matches it), covers_all is true and scopes is a single SUBTREE scope for
+	//     under_uri.
+	//   - Otherwise scopes lists the URIs of the grants below under_uri that confer the permission: SUBTREE for a
+	//     concrete URI (grants apply to the URI and everything below it) and PATTERN for a URI with "_" wildcard
+	//     segments. Scopes are ordered by uri and paginated.
+	//
+	// Required Permissions:
+	//   - permission.check on /organisation/{organisation_id}/project/{project_name}{under_uri}
+	//   - principal.assignment.get on /organisation/{organisation_id}/project/{project_name}/principal/{principal_id}
+	ListAccess(context.Context, *ListAccessRequest) (*ListAccessResponse, error)
+	// ListPrincipalsWithAccess answers "who has access to resource_uri?". It lists the principals holding a grant on
+	// resource_uri, on an ancestor of it, or on a stored "_" wildcard URI that matches it; when permission is set, only
+	// grants that confer that permission count, so a principal is listed if and only if Check(principal, resource_uri,
+	// permission) passes through its own grants. Groups are listed as principals (is_group); with expand_groups their
+	// members are listed too, once per group, with via_group set. Entries are ordered by principal_id, then via_group,
+	// and paginated.
+	// Required Permissions:
+	//   - principal.list on /organisation/{organisation_id}/project/{project_name}
+	//   - principal.assignment.list on /organisation/{organisation_id}/project/{project_name}
+	ListPrincipalsWithAccess(context.Context, *ListPrincipalsWithAccessRequest) (*ListPrincipalsWithAccessResponse, error)
+	// CreateGroup creates a group in a project. A group is a set of principals: grant permissions and roles to it with
+	// GrantUserPermissionsAndRolesOnResource using the principal ID "group:{name}" and every member holds them. Groups
+	// cannot contain groups. It returns ALREADY_EXISTS if the project already has a group with this name.
+	// Required Permissions:
+	//   - group.create on /organisation/{organisation_id}/project/{project_name}
+	CreateGroup(context.Context, *CreateGroupRequest) (*Group, error)
+	// GetGroup returns a group by name.
+	// Required Permissions:
+	//   - group.get on /organisation/{organisation_id}/project/{project_name}/group/{name}
+	GetGroup(context.Context, *GetGroupRequest) (*Group, error)
+	// UpdateGroup updates a group's description. A group's name cannot be changed, because "group:{name}" is the
+	// principal ID its grants are stored under. It returns NOT_FOUND if the group does not exist.
+	// Required Permissions:
+	//   - group.update on /organisation/{organisation_id}/project/{project_name}/group/{name}
+	UpdateGroup(context.Context, *UpdateGroupRequest) (*Group, error)
+	// DeleteGroup deletes a group together with its memberships and every grant made to it, in one transaction. It is
+	// idempotent and returns ok whether the group existed or not.
+	// Required Permissions:
+	//   - group.delete on /organisation/{organisation_id}/project/{project_name}/group/{name}
+	//   - principal.assignment.delete on /organisation/{organisation_id}/project/{project_name}
+	DeleteGroup(context.Context, *DeleteGroupRequest) (*emptypb.Empty, error)
+	// ListGroups returns the groups in a project, ordered by name.
+	// Required Permissions:
+	//   - group.list on /organisation/{organisation_id}/project/{project_name}
+	ListGroups(context.Context, *ListGroupsRequest) (*ListGroupsResponse, error)
+	// AddGroupMembers adds up to 100 principals to a group. Principals that are already members are reported, not
+	// re-added. Principal IDs starting with "group:" are rejected (groups cannot be nested). A principal that is new to
+	// the organisation counts towards its unique principals, exactly as if it had been granted something.
+	// Required Permissions:
+	//   - group.member.add on /organisation/{organisation_id}/project/{project_name}/group/{name}
+	//   - principal.assignment.create on /organisation/{organisation_id}/project/{project_name}
+	AddGroupMembers(context.Context, *AddGroupMembersRequest) (*AddGroupMembersResponse, error)
+	// RemoveGroupMembers removes up to 100 principals from a group. Principals that are not members are reported.
+	// Required Permissions:
+	//   - group.member.remove on /organisation/{organisation_id}/project/{project_name}/group/{name}
+	//   - principal.assignment.create on /organisation/{organisation_id}/project/{project_name}
+	RemoveGroupMembers(context.Context, *RemoveGroupMembersRequest) (*RemoveGroupMembersResponse, error)
+	// ListGroupMembers returns a group's members, ordered by principal ID.
+	// Required Permissions:
+	//   - group.member.list on /organisation/{organisation_id}/project/{project_name}/group/{name}
+	ListGroupMembers(context.Context, *ListGroupMembersRequest) (*ListGroupMembersResponse, error)
+	// ListGroupsForPrincipal returns the groups a principal is a member of in a project, ordered by name.
+	// Required Permissions:
+	//   - group.list on /organisation/{organisation_id}/project/{project_name}
+	//   - principal.assignment.list on /organisation/{organisation_id}/project/{project_name}/principal/{principal_id}
+	ListGroupsForPrincipal(context.Context, *ListGroupsForPrincipalRequest) (*ListGroupsForPrincipalResponse, error)
 	mustEmbedUnimplementedPermissionsServiceServer()
 }
 
@@ -405,6 +681,42 @@ func (UnimplementedPermissionsServiceServer) Check(context.Context, *CheckPermis
 }
 func (UnimplementedPermissionsServiceServer) GetTotalRolesAndPermissionsForOrganisation(context.Context, *GetTotalRolesAndPermissionsForOrganisationRequest) (*GetTotalRolesAndPermissionsForOrganisationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTotalRolesAndPermissionsForOrganisation not implemented")
+}
+func (UnimplementedPermissionsServiceServer) BatchCheck(context.Context, *BatchCheckRequest) (*BatchCheckResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchCheck not implemented")
+}
+func (UnimplementedPermissionsServiceServer) ListAccess(context.Context, *ListAccessRequest) (*ListAccessResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListAccess not implemented")
+}
+func (UnimplementedPermissionsServiceServer) ListPrincipalsWithAccess(context.Context, *ListPrincipalsWithAccessRequest) (*ListPrincipalsWithAccessResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListPrincipalsWithAccess not implemented")
+}
+func (UnimplementedPermissionsServiceServer) CreateGroup(context.Context, *CreateGroupRequest) (*Group, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateGroup not implemented")
+}
+func (UnimplementedPermissionsServiceServer) GetGroup(context.Context, *GetGroupRequest) (*Group, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGroup not implemented")
+}
+func (UnimplementedPermissionsServiceServer) UpdateGroup(context.Context, *UpdateGroupRequest) (*Group, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateGroup not implemented")
+}
+func (UnimplementedPermissionsServiceServer) DeleteGroup(context.Context, *DeleteGroupRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteGroup not implemented")
+}
+func (UnimplementedPermissionsServiceServer) ListGroups(context.Context, *ListGroupsRequest) (*ListGroupsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListGroups not implemented")
+}
+func (UnimplementedPermissionsServiceServer) AddGroupMembers(context.Context, *AddGroupMembersRequest) (*AddGroupMembersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddGroupMembers not implemented")
+}
+func (UnimplementedPermissionsServiceServer) RemoveGroupMembers(context.Context, *RemoveGroupMembersRequest) (*RemoveGroupMembersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveGroupMembers not implemented")
+}
+func (UnimplementedPermissionsServiceServer) ListGroupMembers(context.Context, *ListGroupMembersRequest) (*ListGroupMembersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListGroupMembers not implemented")
+}
+func (UnimplementedPermissionsServiceServer) ListGroupsForPrincipal(context.Context, *ListGroupsForPrincipalRequest) (*ListGroupsForPrincipalResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListGroupsForPrincipal not implemented")
 }
 func (UnimplementedPermissionsServiceServer) mustEmbedUnimplementedPermissionsServiceServer() {}
 
@@ -725,6 +1037,222 @@ func _PermissionsService_GetTotalRolesAndPermissionsForOrganisation_Handler(srv 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PermissionsService_BatchCheck_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchCheckRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PermissionsServiceServer).BatchCheck(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PermissionsService_BatchCheck_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PermissionsServiceServer).BatchCheck(ctx, req.(*BatchCheckRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PermissionsService_ListAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAccessRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PermissionsServiceServer).ListAccess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PermissionsService_ListAccess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PermissionsServiceServer).ListAccess(ctx, req.(*ListAccessRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PermissionsService_ListPrincipalsWithAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPrincipalsWithAccessRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PermissionsServiceServer).ListPrincipalsWithAccess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PermissionsService_ListPrincipalsWithAccess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PermissionsServiceServer).ListPrincipalsWithAccess(ctx, req.(*ListPrincipalsWithAccessRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PermissionsService_CreateGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PermissionsServiceServer).CreateGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PermissionsService_CreateGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PermissionsServiceServer).CreateGroup(ctx, req.(*CreateGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PermissionsService_GetGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PermissionsServiceServer).GetGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PermissionsService_GetGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PermissionsServiceServer).GetGroup(ctx, req.(*GetGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PermissionsService_UpdateGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PermissionsServiceServer).UpdateGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PermissionsService_UpdateGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PermissionsServiceServer).UpdateGroup(ctx, req.(*UpdateGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PermissionsService_DeleteGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PermissionsServiceServer).DeleteGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PermissionsService_DeleteGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PermissionsServiceServer).DeleteGroup(ctx, req.(*DeleteGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PermissionsService_ListGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGroupsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PermissionsServiceServer).ListGroups(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PermissionsService_ListGroups_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PermissionsServiceServer).ListGroups(ctx, req.(*ListGroupsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PermissionsService_AddGroupMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddGroupMembersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PermissionsServiceServer).AddGroupMembers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PermissionsService_AddGroupMembers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PermissionsServiceServer).AddGroupMembers(ctx, req.(*AddGroupMembersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PermissionsService_RemoveGroupMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveGroupMembersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PermissionsServiceServer).RemoveGroupMembers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PermissionsService_RemoveGroupMembers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PermissionsServiceServer).RemoveGroupMembers(ctx, req.(*RemoveGroupMembersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PermissionsService_ListGroupMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGroupMembersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PermissionsServiceServer).ListGroupMembers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PermissionsService_ListGroupMembers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PermissionsServiceServer).ListGroupMembers(ctx, req.(*ListGroupMembersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PermissionsService_ListGroupsForPrincipal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGroupsForPrincipalRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PermissionsServiceServer).ListGroupsForPrincipal(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PermissionsService_ListGroupsForPrincipal_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PermissionsServiceServer).ListGroupsForPrincipal(ctx, req.(*ListGroupsForPrincipalRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PermissionsService_ServiceDesc is the grpc.ServiceDesc for PermissionsService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -799,6 +1327,54 @@ var PermissionsService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTotalRolesAndPermissionsForOrganisation",
 			Handler:    _PermissionsService_GetTotalRolesAndPermissionsForOrganisation_Handler,
+		},
+		{
+			MethodName: "BatchCheck",
+			Handler:    _PermissionsService_BatchCheck_Handler,
+		},
+		{
+			MethodName: "ListAccess",
+			Handler:    _PermissionsService_ListAccess_Handler,
+		},
+		{
+			MethodName: "ListPrincipalsWithAccess",
+			Handler:    _PermissionsService_ListPrincipalsWithAccess_Handler,
+		},
+		{
+			MethodName: "CreateGroup",
+			Handler:    _PermissionsService_CreateGroup_Handler,
+		},
+		{
+			MethodName: "GetGroup",
+			Handler:    _PermissionsService_GetGroup_Handler,
+		},
+		{
+			MethodName: "UpdateGroup",
+			Handler:    _PermissionsService_UpdateGroup_Handler,
+		},
+		{
+			MethodName: "DeleteGroup",
+			Handler:    _PermissionsService_DeleteGroup_Handler,
+		},
+		{
+			MethodName: "ListGroups",
+			Handler:    _PermissionsService_ListGroups_Handler,
+		},
+		{
+			MethodName: "AddGroupMembers",
+			Handler:    _PermissionsService_AddGroupMembers_Handler,
+		},
+		{
+			MethodName: "RemoveGroupMembers",
+			Handler:    _PermissionsService_RemoveGroupMembers_Handler,
+		},
+		{
+			MethodName: "ListGroupMembers",
+			Handler:    _PermissionsService_ListGroupMembers_Handler,
+		},
+		{
+			MethodName: "ListGroupsForPrincipal",
+			Handler:    _PermissionsService_ListGroupsForPrincipal_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

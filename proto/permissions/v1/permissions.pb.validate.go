@@ -863,7 +863,7 @@ func (m *CheckPermissionRequest) validate(all bool) error {
 		if !_CheckPermissionRequest_ResourceUris_Pattern.MatchString(item) {
 			err := CheckPermissionRequestValidationError{
 				field:  fmt.Sprintf("ResourceUris[%v]", idx),
-				reason: "value does not match regex pattern \"^(/([^/]+/)*[^/]+)?$\"",
+				reason: "value does not match regex pattern \"^(/([^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+/)*[^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+)?$\"",
 			}
 			if !all {
 				return err
@@ -997,7 +997,7 @@ var _ interface {
 
 var _CheckPermissionRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
 
-var _CheckPermissionRequest_ResourceUris_Pattern = regexp.MustCompile("^(/([^/]+/)*[^/]+)?$")
+var _CheckPermissionRequest_ResourceUris_Pattern = regexp.MustCompile("^(/([^/()\\[\\]{}*+?|^$\\\\]+/)*[^/()\\[\\]{}*+?|^$\\\\]+)?$")
 
 // Validate checks the field values on MissingPermissions with the rules
 // defined in the proto definition for this message. If any rules are
@@ -2014,7 +2014,7 @@ func (m *Assignment) validate(all bool) error {
 	if !_Assignment_ResourceUri_Pattern.MatchString(m.GetResourceUri()) {
 		err := AssignmentValidationError{
 			field:  "ResourceUri",
-			reason: "value does not match regex pattern \"^(/([^/]+/)*[^/]+)?$\"",
+			reason: "value does not match regex pattern \"^(/([^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+/)*[^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+)?$\"",
 		}
 		if !all {
 			return err
@@ -2167,7 +2167,7 @@ var _ interface {
 	ErrorName() string
 } = AssignmentValidationError{}
 
-var _Assignment_ResourceUri_Pattern = regexp.MustCompile("^(/([^/]+/)*[^/]+)?$")
+var _Assignment_ResourceUri_Pattern = regexp.MustCompile("^(/([^/()\\[\\]{}*+?|^$\\\\]+/)*[^/()\\[\\]{}*+?|^$\\\\]+)?$")
 
 // Validate checks the field values on
 // GetUserPermissionsAndRolesOnResourceResponse with the rules defined in the
@@ -2241,7 +2241,7 @@ func (m *GetUserPermissionsAndRolesOnResourceResponse) validate(all bool) error 
 	if !_GetUserPermissionsAndRolesOnResourceResponse_ResourceUri_Pattern.MatchString(m.GetResourceUri()) {
 		err := GetUserPermissionsAndRolesOnResourceResponseValidationError{
 			field:  "ResourceUri",
-			reason: "value does not match regex pattern \"^(/([^/]+/)*[^/]+)?$\"",
+			reason: "value does not match regex pattern \"^(/([^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+/)*[^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+)?$\"",
 		}
 		if !all {
 			return err
@@ -2366,7 +2366,7 @@ var _ interface {
 
 var _GetUserPermissionsAndRolesOnResourceResponse_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
 
-var _GetUserPermissionsAndRolesOnResourceResponse_ResourceUri_Pattern = regexp.MustCompile("^(/([^/]+/)*[^/]+)?$")
+var _GetUserPermissionsAndRolesOnResourceResponse_ResourceUri_Pattern = regexp.MustCompile("^(/([^/()\\[\\]{}*+?|^$\\\\]+/)*[^/()\\[\\]{}*+?|^$\\\\]+)?$")
 
 // Validate checks the field values on
 // GetUserPermissionsAndRolesOnResourceRequest with the rules defined in the
@@ -2440,7 +2440,7 @@ func (m *GetUserPermissionsAndRolesOnResourceRequest) validate(all bool) error {
 	if !_GetUserPermissionsAndRolesOnResourceRequest_ResourceUri_Pattern.MatchString(m.GetResourceUri()) {
 		err := GetUserPermissionsAndRolesOnResourceRequestValidationError{
 			field:  "ResourceUri",
-			reason: "value does not match regex pattern \"^(/([^/]+/)*[^/]+)?$\"",
+			reason: "value does not match regex pattern \"^(/([^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+/)*[^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+)?$\"",
 		}
 		if !all {
 			return err
@@ -2532,7 +2532,7 @@ var _ interface {
 
 var _GetUserPermissionsAndRolesOnResourceRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
 
-var _GetUserPermissionsAndRolesOnResourceRequest_ResourceUri_Pattern = regexp.MustCompile("^(/([^/]+/)*[^/]+)?$")
+var _GetUserPermissionsAndRolesOnResourceRequest_ResourceUri_Pattern = regexp.MustCompile("^(/([^/()\\[\\]{}*+?|^$\\\\]+/)*[^/()\\[\\]{}*+?|^$\\\\]+)?$")
 
 // Validate checks the field values on
 // GrantUserPermissionsAndRolesOnResourceRequest with the rules defined in the
@@ -2606,7 +2606,7 @@ func (m *GrantUserPermissionsAndRolesOnResourceRequest) validate(all bool) error
 	if !_GrantUserPermissionsAndRolesOnResourceRequest_ResourceUri_Pattern.MatchString(m.GetResourceUri()) {
 		err := GrantUserPermissionsAndRolesOnResourceRequestValidationError{
 			field:  "ResourceUri",
-			reason: "value does not match regex pattern \"^(/([^/]+/)*[^/]+)?$\"",
+			reason: "value does not match regex pattern \"^(/([^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+/)*[^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+)?$\"",
 		}
 		if !all {
 			return err
@@ -2633,10 +2633,21 @@ func (m *GrantUserPermissionsAndRolesOnResourceRequest) validate(all bool) error
 	for idx, item := range m.GetRoles() {
 		_, _ = idx, item
 
-		if utf8.RuneCountInString(item) < 1 {
+		if l := utf8.RuneCountInString(item); l < 1 || l > 128 {
 			err := GrantUserPermissionsAndRolesOnResourceRequestValidationError{
 				field:  fmt.Sprintf("Roles[%v]", idx),
-				reason: "value length must be at least 1 runes",
+				reason: "value length must be between 1 and 128 runes, inclusive",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if !_GrantUserPermissionsAndRolesOnResourceRequest_Roles_Pattern.MatchString(item) {
+			err := GrantUserPermissionsAndRolesOnResourceRequestValidationError{
+				field:  fmt.Sprintf("Roles[%v]", idx),
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9._-]+$\"",
 			}
 			if !all {
 				return err
@@ -2733,7 +2744,9 @@ var _ interface {
 
 var _GrantUserPermissionsAndRolesOnResourceRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
 
-var _GrantUserPermissionsAndRolesOnResourceRequest_ResourceUri_Pattern = regexp.MustCompile("^(/([^/]+/)*[^/]+)?$")
+var _GrantUserPermissionsAndRolesOnResourceRequest_ResourceUri_Pattern = regexp.MustCompile("^(/([^/()\\[\\]{}*+?|^$\\\\]+/)*[^/()\\[\\]{}*+?|^$\\\\]+)?$")
+
+var _GrantUserPermissionsAndRolesOnResourceRequest_Roles_Pattern = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
 
 // Validate checks the field values on CreatePermissionRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -3040,7 +3053,27 @@ func (m *GetPermissionRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Name
+	if l := utf8.RuneCountInString(m.GetName()); l < 1 || l > 128 {
+		err := GetPermissionRequestValidationError{
+			field:  "Name",
+			reason: "value length must be between 1 and 128 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_GetPermissionRequest_Name_Pattern.MatchString(m.GetName()) {
+		err := GetPermissionRequestValidationError{
+			field:  "Name",
+			reason: "value does not match regex pattern \"^[a-zA-Z0-9._-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return GetPermissionRequestMultiError(errors)
@@ -3124,6 +3157,8 @@ var _ interface {
 
 var _GetPermissionRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
 
+var _GetPermissionRequest_Name_Pattern = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
+
 // Validate checks the field values on UpdatePermissionRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -3168,12 +3203,54 @@ func (m *UpdatePermissionRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Name
+	if l := utf8.RuneCountInString(m.GetName()); l < 1 || l > 128 {
+		err := UpdatePermissionRequestValidationError{
+			field:  "Name",
+			reason: "value length must be between 1 and 128 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_UpdatePermissionRequest_Name_Pattern.MatchString(m.GetName()) {
+		err := UpdatePermissionRequestValidationError{
+			field:  "Name",
+			reason: "value does not match regex pattern \"^[a-zA-Z0-9._-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Description
 
 	if m.NewName != nil {
-		// no validation rules for NewName
+
+		if l := utf8.RuneCountInString(m.GetNewName()); l < 1 || l > 128 {
+			err := UpdatePermissionRequestValidationError{
+				field:  "NewName",
+				reason: "value length must be between 1 and 128 runes, inclusive",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if !_UpdatePermissionRequest_NewName_Pattern.MatchString(m.GetNewName()) {
+			err := UpdatePermissionRequestValidationError{
+				field:  "NewName",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9._-]+$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
 	}
 
 	if len(errors) > 0 {
@@ -3258,6 +3335,10 @@ var _ interface {
 
 var _UpdatePermissionRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
 
+var _UpdatePermissionRequest_Name_Pattern = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
+
+var _UpdatePermissionRequest_NewName_Pattern = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
+
 // Validate checks the field values on DeletePermissionRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -3302,7 +3383,27 @@ func (m *DeletePermissionRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Name
+	if l := utf8.RuneCountInString(m.GetName()); l < 1 || l > 128 {
+		err := DeletePermissionRequestValidationError{
+			field:  "Name",
+			reason: "value length must be between 1 and 128 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_DeletePermissionRequest_Name_Pattern.MatchString(m.GetName()) {
+		err := DeletePermissionRequestValidationError{
+			field:  "Name",
+			reason: "value does not match regex pattern \"^[a-zA-Z0-9._-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return DeletePermissionRequestMultiError(errors)
@@ -3385,6 +3486,8 @@ var _ interface {
 } = DeletePermissionRequestValidationError{}
 
 var _DeletePermissionRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+var _DeletePermissionRequest_Name_Pattern = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
 
 // Validate checks the field values on ListPermissionsResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -3595,9 +3698,56 @@ func (m *CreateRoleRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Name
+	if l := utf8.RuneCountInString(m.GetName()); l < 1 || l > 128 {
+		err := CreateRoleRequestValidationError{
+			field:  "Name",
+			reason: "value length must be between 1 and 128 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_CreateRoleRequest_Name_Pattern.MatchString(m.GetName()) {
+		err := CreateRoleRequestValidationError{
+			field:  "Name",
+			reason: "value does not match regex pattern \"^[^\\\\x00-\\\\x1f\\\\x7f]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Description
+
+	for idx, item := range m.GetPermissions() {
+		_, _ = idx, item
+
+		if l := utf8.RuneCountInString(item); l < 1 || l > 128 {
+			err := CreateRoleRequestValidationError{
+				field:  fmt.Sprintf("Permissions[%v]", idx),
+				reason: "value length must be between 1 and 128 runes, inclusive",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if !_CreateRoleRequest_Permissions_Pattern.MatchString(item) {
+			err := CreateRoleRequestValidationError{
+				field:  fmt.Sprintf("Permissions[%v]", idx),
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9._-]+$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	if len(errors) > 0 {
 		return CreateRoleRequestMultiError(errors)
@@ -3680,6 +3830,10 @@ var _ interface {
 } = CreateRoleRequestValidationError{}
 
 var _CreateRoleRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+var _CreateRoleRequest_Name_Pattern = regexp.MustCompile("^[^\\x00-\\x1f\\x7f]+$")
+
+var _CreateRoleRequest_Permissions_Pattern = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
 
 // Validate checks the field values on Role with the rules defined in the proto
 // definition for this message. If any rules are violated, the first error
@@ -3867,7 +4021,27 @@ func (m *GetRoleRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Id
+	if l := utf8.RuneCountInString(m.GetId()); l < 1 || l > 128 {
+		err := GetRoleRequestValidationError{
+			field:  "Id",
+			reason: "value length must be between 1 and 128 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_GetRoleRequest_Id_Pattern.MatchString(m.GetId()) {
+		err := GetRoleRequestValidationError{
+			field:  "Id",
+			reason: "value does not match regex pattern \"^[a-zA-Z0-9._-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return GetRoleRequestMultiError(errors)
@@ -3949,6 +4123,8 @@ var _ interface {
 
 var _GetRoleRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
 
+var _GetRoleRequest_Id_Pattern = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
+
 // Validate checks the field values on UpdateRoleRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.
@@ -3993,11 +4169,78 @@ func (m *UpdateRoleRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Id
+	if l := utf8.RuneCountInString(m.GetId()); l < 1 || l > 128 {
+		err := UpdateRoleRequestValidationError{
+			field:  "Id",
+			reason: "value length must be between 1 and 128 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Name
+	if !_UpdateRoleRequest_Id_Pattern.MatchString(m.GetId()) {
+		err := UpdateRoleRequestValidationError{
+			field:  "Id",
+			reason: "value does not match regex pattern \"^[a-zA-Z0-9._-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if l := utf8.RuneCountInString(m.GetName()); l < 1 || l > 128 {
+		err := UpdateRoleRequestValidationError{
+			field:  "Name",
+			reason: "value length must be between 1 and 128 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_UpdateRoleRequest_Name_Pattern.MatchString(m.GetName()) {
+		err := UpdateRoleRequestValidationError{
+			field:  "Name",
+			reason: "value does not match regex pattern \"^[^\\\\x00-\\\\x1f\\\\x7f]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Description
+
+	for idx, item := range m.GetPermissions() {
+		_, _ = idx, item
+
+		if l := utf8.RuneCountInString(item); l < 1 || l > 128 {
+			err := UpdateRoleRequestValidationError{
+				field:  fmt.Sprintf("Permissions[%v]", idx),
+				reason: "value length must be between 1 and 128 runes, inclusive",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if !_UpdateRoleRequest_Permissions_Pattern.MatchString(item) {
+			err := UpdateRoleRequestValidationError{
+				field:  fmt.Sprintf("Permissions[%v]", idx),
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9._-]+$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	if len(errors) > 0 {
 		return UpdateRoleRequestMultiError(errors)
@@ -4081,6 +4324,12 @@ var _ interface {
 
 var _UpdateRoleRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
 
+var _UpdateRoleRequest_Id_Pattern = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
+
+var _UpdateRoleRequest_Name_Pattern = regexp.MustCompile("^[^\\x00-\\x1f\\x7f]+$")
+
+var _UpdateRoleRequest_Permissions_Pattern = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
+
 // Validate checks the field values on DeleteRoleRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.
@@ -4125,7 +4374,27 @@ func (m *DeleteRoleRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Id
+	if l := utf8.RuneCountInString(m.GetId()); l < 1 || l > 128 {
+		err := DeleteRoleRequestValidationError{
+			field:  "Id",
+			reason: "value length must be between 1 and 128 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_DeleteRoleRequest_Id_Pattern.MatchString(m.GetId()) {
+		err := DeleteRoleRequestValidationError{
+			field:  "Id",
+			reason: "value does not match regex pattern \"^[a-zA-Z0-9._-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return DeleteRoleRequestMultiError(errors)
@@ -4208,6 +4477,8 @@ var _ interface {
 } = DeleteRoleRequestValidationError{}
 
 var _DeleteRoleRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+var _DeleteRoleRequest_Id_Pattern = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
 
 // Validate checks the field values on ListRolesResponse with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -4446,7 +4717,7 @@ func (m *RevokeUserPermissionsAndRolesOnResourceRequest) validate(all bool) erro
 	if !_RevokeUserPermissionsAndRolesOnResourceRequest_ResourceUri_Pattern.MatchString(m.GetResourceUri()) {
 		err := RevokeUserPermissionsAndRolesOnResourceRequestValidationError{
 			field:  "ResourceUri",
-			reason: "value does not match regex pattern \"^(/([^/]+/)*[^/]+)?$\"",
+			reason: "value does not match regex pattern \"^(/([^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+/)*[^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+)?$\"",
 		}
 		if !all {
 			return err
@@ -4473,10 +4744,21 @@ func (m *RevokeUserPermissionsAndRolesOnResourceRequest) validate(all bool) erro
 	for idx, item := range m.GetRoles() {
 		_, _ = idx, item
 
-		if utf8.RuneCountInString(item) < 1 {
+		if l := utf8.RuneCountInString(item); l < 1 || l > 128 {
 			err := RevokeUserPermissionsAndRolesOnResourceRequestValidationError{
 				field:  fmt.Sprintf("Roles[%v]", idx),
-				reason: "value length must be at least 1 runes",
+				reason: "value length must be between 1 and 128 runes, inclusive",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if !_RevokeUserPermissionsAndRolesOnResourceRequest_Roles_Pattern.MatchString(item) {
+			err := RevokeUserPermissionsAndRolesOnResourceRequestValidationError{
+				field:  fmt.Sprintf("Roles[%v]", idx),
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9._-]+$\"",
 			}
 			if !all {
 				return err
@@ -4573,7 +4855,9 @@ var _ interface {
 
 var _RevokeUserPermissionsAndRolesOnResourceRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
 
-var _RevokeUserPermissionsAndRolesOnResourceRequest_ResourceUri_Pattern = regexp.MustCompile("^(/([^/]+/)*[^/]+)?$")
+var _RevokeUserPermissionsAndRolesOnResourceRequest_ResourceUri_Pattern = regexp.MustCompile("^(/([^/()\\[\\]{}*+?|^$\\\\]+/)*[^/()\\[\\]{}*+?|^$\\\\]+)?$")
+
+var _RevokeUserPermissionsAndRolesOnResourceRequest_Roles_Pattern = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
 
 // Validate checks the field values on PrincipalCountUpdatedEvent with the
 // rules defined in the proto definition for this message. If any rules are
@@ -4689,3 +4973,4440 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = PrincipalCountUpdatedEventValidationError{}
+
+// Validate checks the field values on BatchCheckRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *BatchCheckRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BatchCheckRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// BatchCheckRequestMultiError, or nil if none found.
+func (m *BatchCheckRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BatchCheckRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if l := utf8.RuneCountInString(m.GetProjectName()); l < 1 || l > 32 {
+		err := BatchCheckRequestValidationError{
+			field:  "ProjectName",
+			reason: "value length must be between 1 and 32 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_BatchCheckRequest_ProjectName_Pattern.MatchString(m.GetProjectName()) {
+		err := BatchCheckRequestValidationError{
+			field:  "ProjectName",
+			reason: "value does not match regex pattern \"^[a-z0-9-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetPrincipalId()) < 1 {
+		err := BatchCheckRequestValidationError{
+			field:  "PrincipalId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if l := len(m.GetResourceUris()); l < 1 || l > 100 {
+		err := BatchCheckRequestValidationError{
+			field:  "ResourceUris",
+			reason: "value must contain between 1 and 100 items, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	_BatchCheckRequest_ResourceUris_Unique := make(map[string]struct{}, len(m.GetResourceUris()))
+
+	for idx, item := range m.GetResourceUris() {
+		_, _ = idx, item
+
+		if _, exists := _BatchCheckRequest_ResourceUris_Unique[item]; exists {
+			err := BatchCheckRequestValidationError{
+				field:  fmt.Sprintf("ResourceUris[%v]", idx),
+				reason: "repeated value must contain unique items",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		} else {
+			_BatchCheckRequest_ResourceUris_Unique[item] = struct{}{}
+		}
+
+		if _, err := url.Parse(item); err != nil {
+			err = BatchCheckRequestValidationError{
+				field:  fmt.Sprintf("ResourceUris[%v]", idx),
+				reason: "value must be a valid URI",
+				cause:  err,
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if !_BatchCheckRequest_ResourceUris_Pattern.MatchString(item) {
+			err := BatchCheckRequestValidationError{
+				field:  fmt.Sprintf("ResourceUris[%v]", idx),
+				reason: "value does not match regex pattern \"^(/([^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+/)*[^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+)?$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if l := len(m.GetPermissions()); l < 1 || l > 100 {
+		err := BatchCheckRequestValidationError{
+			field:  "Permissions",
+			reason: "value must contain between 1 and 100 items, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	_BatchCheckRequest_Permissions_Unique := make(map[string]struct{}, len(m.GetPermissions()))
+
+	for idx, item := range m.GetPermissions() {
+		_, _ = idx, item
+
+		if _, exists := _BatchCheckRequest_Permissions_Unique[item]; exists {
+			err := BatchCheckRequestValidationError{
+				field:  fmt.Sprintf("Permissions[%v]", idx),
+				reason: "repeated value must contain unique items",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		} else {
+			_BatchCheckRequest_Permissions_Unique[item] = struct{}{}
+		}
+
+		if utf8.RuneCountInString(item) < 1 {
+			err := BatchCheckRequestValidationError{
+				field:  fmt.Sprintf("Permissions[%v]", idx),
+				reason: "value length must be at least 1 runes",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return BatchCheckRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// BatchCheckRequestMultiError is an error wrapping multiple validation errors
+// returned by BatchCheckRequest.ValidateAll() if the designated constraints
+// aren't met.
+type BatchCheckRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BatchCheckRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BatchCheckRequestMultiError) AllErrors() []error { return m }
+
+// BatchCheckRequestValidationError is the validation error returned by
+// BatchCheckRequest.Validate if the designated constraints aren't met.
+type BatchCheckRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BatchCheckRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BatchCheckRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BatchCheckRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BatchCheckRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BatchCheckRequestValidationError) ErrorName() string {
+	return "BatchCheckRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e BatchCheckRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBatchCheckRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BatchCheckRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BatchCheckRequestValidationError{}
+
+var _BatchCheckRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+var _BatchCheckRequest_ResourceUris_Pattern = regexp.MustCompile("^(/([^/()\\[\\]{}*+?|^$\\\\]+/)*[^/()\\[\\]{}*+?|^$\\\\]+)?$")
+
+// Validate checks the field values on BatchCheckResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *BatchCheckResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BatchCheckResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// BatchCheckResponseMultiError, or nil if none found.
+func (m *BatchCheckResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BatchCheckResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetResults() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, BatchCheckResponseValidationError{
+						field:  fmt.Sprintf("Results[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, BatchCheckResponseValidationError{
+						field:  fmt.Sprintf("Results[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return BatchCheckResponseValidationError{
+					field:  fmt.Sprintf("Results[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return BatchCheckResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// BatchCheckResponseMultiError is an error wrapping multiple validation errors
+// returned by BatchCheckResponse.ValidateAll() if the designated constraints
+// aren't met.
+type BatchCheckResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BatchCheckResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BatchCheckResponseMultiError) AllErrors() []error { return m }
+
+// BatchCheckResponseValidationError is the validation error returned by
+// BatchCheckResponse.Validate if the designated constraints aren't met.
+type BatchCheckResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BatchCheckResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BatchCheckResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BatchCheckResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BatchCheckResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BatchCheckResponseValidationError) ErrorName() string {
+	return "BatchCheckResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e BatchCheckResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBatchCheckResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BatchCheckResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BatchCheckResponseValidationError{}
+
+// Validate checks the field values on BatchCheckResult with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *BatchCheckResult) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BatchCheckResult with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// BatchCheckResultMultiError, or nil if none found.
+func (m *BatchCheckResult) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BatchCheckResult) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ResourceUri
+
+	// no validation rules for Allowed
+
+	if len(errors) > 0 {
+		return BatchCheckResultMultiError(errors)
+	}
+
+	return nil
+}
+
+// BatchCheckResultMultiError is an error wrapping multiple validation errors
+// returned by BatchCheckResult.ValidateAll() if the designated constraints
+// aren't met.
+type BatchCheckResultMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BatchCheckResultMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BatchCheckResultMultiError) AllErrors() []error { return m }
+
+// BatchCheckResultValidationError is the validation error returned by
+// BatchCheckResult.Validate if the designated constraints aren't met.
+type BatchCheckResultValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BatchCheckResultValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BatchCheckResultValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BatchCheckResultValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BatchCheckResultValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BatchCheckResultValidationError) ErrorName() string { return "BatchCheckResultValidationError" }
+
+// Error satisfies the builtin error interface
+func (e BatchCheckResultValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBatchCheckResult.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BatchCheckResultValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BatchCheckResultValidationError{}
+
+// Validate checks the field values on ListAccessRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ListAccessRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListAccessRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListAccessRequestMultiError, or nil if none found.
+func (m *ListAccessRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListAccessRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if l := utf8.RuneCountInString(m.GetProjectName()); l < 1 || l > 32 {
+		err := ListAccessRequestValidationError{
+			field:  "ProjectName",
+			reason: "value length must be between 1 and 32 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_ListAccessRequest_ProjectName_Pattern.MatchString(m.GetProjectName()) {
+		err := ListAccessRequestValidationError{
+			field:  "ProjectName",
+			reason: "value does not match regex pattern \"^[a-z0-9-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetPrincipalId()) < 1 {
+		err := ListAccessRequestValidationError{
+			field:  "PrincipalId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if l := utf8.RuneCountInString(m.GetPermission()); l < 1 || l > 128 {
+		err := ListAccessRequestValidationError{
+			field:  "Permission",
+			reason: "value length must be between 1 and 128 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_ListAccessRequest_Permission_Pattern.MatchString(m.GetPermission()) {
+		err := ListAccessRequestValidationError{
+			field:  "Permission",
+			reason: "value does not match regex pattern \"^[a-zA-Z0-9._-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetUnderUri()) < 1 {
+		err := ListAccessRequestValidationError{
+			field:  "UnderUri",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if _, err := url.Parse(m.GetUnderUri()); err != nil {
+		err = ListAccessRequestValidationError{
+			field:  "UnderUri",
+			reason: "value must be a valid URI",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_ListAccessRequest_UnderUri_Pattern.MatchString(m.GetUnderUri()) {
+		err := ListAccessRequestValidationError{
+			field:  "UnderUri",
+			reason: "value does not match regex pattern \"^(/([^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+/)*[^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+)?$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.Pagination != nil {
+
+		if all {
+			switch v := interface{}(m.GetPagination()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListAccessRequestValidationError{
+						field:  "Pagination",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListAccessRequestValidationError{
+						field:  "Pagination",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListAccessRequestValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ListAccessRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListAccessRequestMultiError is an error wrapping multiple validation errors
+// returned by ListAccessRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ListAccessRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListAccessRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListAccessRequestMultiError) AllErrors() []error { return m }
+
+// ListAccessRequestValidationError is the validation error returned by
+// ListAccessRequest.Validate if the designated constraints aren't met.
+type ListAccessRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListAccessRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListAccessRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListAccessRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListAccessRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListAccessRequestValidationError) ErrorName() string {
+	return "ListAccessRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListAccessRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListAccessRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListAccessRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListAccessRequestValidationError{}
+
+var _ListAccessRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+var _ListAccessRequest_Permission_Pattern = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
+
+var _ListAccessRequest_UnderUri_Pattern = regexp.MustCompile("^(/([^/()\\[\\]{}*+?|^$\\\\]+/)*[^/()\\[\\]{}*+?|^$\\\\]+)?$")
+
+// Validate checks the field values on ListAccessResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListAccessResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListAccessResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListAccessResponseMultiError, or nil if none found.
+func (m *ListAccessResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListAccessResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for CoversAll
+
+	for idx, item := range m.GetScopes() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListAccessResponseValidationError{
+						field:  fmt.Sprintf("Scopes[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListAccessResponseValidationError{
+						field:  fmt.Sprintf("Scopes[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListAccessResponseValidationError{
+					field:  fmt.Sprintf("Scopes[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if all {
+		switch v := interface{}(m.GetPagination()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ListAccessResponseValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ListAccessResponseValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ListAccessResponseValidationError{
+				field:  "Pagination",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ListAccessResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListAccessResponseMultiError is an error wrapping multiple validation errors
+// returned by ListAccessResponse.ValidateAll() if the designated constraints
+// aren't met.
+type ListAccessResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListAccessResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListAccessResponseMultiError) AllErrors() []error { return m }
+
+// ListAccessResponseValidationError is the validation error returned by
+// ListAccessResponse.Validate if the designated constraints aren't met.
+type ListAccessResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListAccessResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListAccessResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListAccessResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListAccessResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListAccessResponseValidationError) ErrorName() string {
+	return "ListAccessResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListAccessResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListAccessResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListAccessResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListAccessResponseValidationError{}
+
+// Validate checks the field values on AccessScope with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AccessScope) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AccessScope with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in AccessScopeMultiError, or
+// nil if none found.
+func (m *AccessScope) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AccessScope) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Uri
+
+	// no validation rules for Scope
+
+	if len(errors) > 0 {
+		return AccessScopeMultiError(errors)
+	}
+
+	return nil
+}
+
+// AccessScopeMultiError is an error wrapping multiple validation errors
+// returned by AccessScope.ValidateAll() if the designated constraints aren't met.
+type AccessScopeMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AccessScopeMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AccessScopeMultiError) AllErrors() []error { return m }
+
+// AccessScopeValidationError is the validation error returned by
+// AccessScope.Validate if the designated constraints aren't met.
+type AccessScopeValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AccessScopeValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AccessScopeValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AccessScopeValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AccessScopeValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AccessScopeValidationError) ErrorName() string { return "AccessScopeValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AccessScopeValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAccessScope.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AccessScopeValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AccessScopeValidationError{}
+
+// Validate checks the field values on ListPrincipalsWithAccessRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListPrincipalsWithAccessRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListPrincipalsWithAccessRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ListPrincipalsWithAccessRequestMultiError, or nil if none found.
+func (m *ListPrincipalsWithAccessRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListPrincipalsWithAccessRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if l := utf8.RuneCountInString(m.GetProjectName()); l < 1 || l > 32 {
+		err := ListPrincipalsWithAccessRequestValidationError{
+			field:  "ProjectName",
+			reason: "value length must be between 1 and 32 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_ListPrincipalsWithAccessRequest_ProjectName_Pattern.MatchString(m.GetProjectName()) {
+		err := ListPrincipalsWithAccessRequestValidationError{
+			field:  "ProjectName",
+			reason: "value does not match regex pattern \"^[a-z0-9-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetResourceUri()) < 1 {
+		err := ListPrincipalsWithAccessRequestValidationError{
+			field:  "ResourceUri",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if _, err := url.Parse(m.GetResourceUri()); err != nil {
+		err = ListPrincipalsWithAccessRequestValidationError{
+			field:  "ResourceUri",
+			reason: "value must be a valid URI",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_ListPrincipalsWithAccessRequest_ResourceUri_Pattern.MatchString(m.GetResourceUri()) {
+		err := ListPrincipalsWithAccessRequestValidationError{
+			field:  "ResourceUri",
+			reason: "value does not match regex pattern \"^(/([^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+/)*[^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+)?$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for ExpandGroups
+
+	if m.Permission != nil {
+
+		if l := utf8.RuneCountInString(m.GetPermission()); l < 1 || l > 128 {
+			err := ListPrincipalsWithAccessRequestValidationError{
+				field:  "Permission",
+				reason: "value length must be between 1 and 128 runes, inclusive",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if !_ListPrincipalsWithAccessRequest_Permission_Pattern.MatchString(m.GetPermission()) {
+			err := ListPrincipalsWithAccessRequestValidationError{
+				field:  "Permission",
+				reason: "value does not match regex pattern \"^[a-zA-Z0-9._-]+$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if m.Pagination != nil {
+
+		if all {
+			switch v := interface{}(m.GetPagination()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListPrincipalsWithAccessRequestValidationError{
+						field:  "Pagination",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListPrincipalsWithAccessRequestValidationError{
+						field:  "Pagination",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListPrincipalsWithAccessRequestValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ListPrincipalsWithAccessRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListPrincipalsWithAccessRequestMultiError is an error wrapping multiple
+// validation errors returned by ListPrincipalsWithAccessRequest.ValidateAll()
+// if the designated constraints aren't met.
+type ListPrincipalsWithAccessRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListPrincipalsWithAccessRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListPrincipalsWithAccessRequestMultiError) AllErrors() []error { return m }
+
+// ListPrincipalsWithAccessRequestValidationError is the validation error
+// returned by ListPrincipalsWithAccessRequest.Validate if the designated
+// constraints aren't met.
+type ListPrincipalsWithAccessRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListPrincipalsWithAccessRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListPrincipalsWithAccessRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListPrincipalsWithAccessRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListPrincipalsWithAccessRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListPrincipalsWithAccessRequestValidationError) ErrorName() string {
+	return "ListPrincipalsWithAccessRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListPrincipalsWithAccessRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListPrincipalsWithAccessRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListPrincipalsWithAccessRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListPrincipalsWithAccessRequestValidationError{}
+
+var _ListPrincipalsWithAccessRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+var _ListPrincipalsWithAccessRequest_ResourceUri_Pattern = regexp.MustCompile("^(/([^/()\\[\\]{}*+?|^$\\\\]+/)*[^/()\\[\\]{}*+?|^$\\\\]+)?$")
+
+var _ListPrincipalsWithAccessRequest_Permission_Pattern = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
+
+// Validate checks the field values on ListPrincipalsWithAccessResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *ListPrincipalsWithAccessResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListPrincipalsWithAccessResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ListPrincipalsWithAccessResponseMultiError, or nil if none found.
+func (m *ListPrincipalsWithAccessResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListPrincipalsWithAccessResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetPrincipals() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListPrincipalsWithAccessResponseValidationError{
+						field:  fmt.Sprintf("Principals[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListPrincipalsWithAccessResponseValidationError{
+						field:  fmt.Sprintf("Principals[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListPrincipalsWithAccessResponseValidationError{
+					field:  fmt.Sprintf("Principals[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if all {
+		switch v := interface{}(m.GetPagination()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ListPrincipalsWithAccessResponseValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ListPrincipalsWithAccessResponseValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ListPrincipalsWithAccessResponseValidationError{
+				field:  "Pagination",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ListPrincipalsWithAccessResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListPrincipalsWithAccessResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// ListPrincipalsWithAccessResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ListPrincipalsWithAccessResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListPrincipalsWithAccessResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListPrincipalsWithAccessResponseMultiError) AllErrors() []error { return m }
+
+// ListPrincipalsWithAccessResponseValidationError is the validation error
+// returned by ListPrincipalsWithAccessResponse.Validate if the designated
+// constraints aren't met.
+type ListPrincipalsWithAccessResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListPrincipalsWithAccessResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListPrincipalsWithAccessResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListPrincipalsWithAccessResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListPrincipalsWithAccessResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListPrincipalsWithAccessResponseValidationError) ErrorName() string {
+	return "ListPrincipalsWithAccessResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListPrincipalsWithAccessResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListPrincipalsWithAccessResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListPrincipalsWithAccessResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListPrincipalsWithAccessResponseValidationError{}
+
+// Validate checks the field values on PrincipalAccess with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *PrincipalAccess) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on PrincipalAccess with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// PrincipalAccessMultiError, or nil if none found.
+func (m *PrincipalAccess) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *PrincipalAccess) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for PrincipalId
+
+	// no validation rules for IsGroup
+
+	// no validation rules for ViaGroup
+
+	for idx, item := range m.GetVia() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, PrincipalAccessValidationError{
+						field:  fmt.Sprintf("Via[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, PrincipalAccessValidationError{
+						field:  fmt.Sprintf("Via[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return PrincipalAccessValidationError{
+					field:  fmt.Sprintf("Via[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return PrincipalAccessMultiError(errors)
+	}
+
+	return nil
+}
+
+// PrincipalAccessMultiError is an error wrapping multiple validation errors
+// returned by PrincipalAccess.ValidateAll() if the designated constraints
+// aren't met.
+type PrincipalAccessMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m PrincipalAccessMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m PrincipalAccessMultiError) AllErrors() []error { return m }
+
+// PrincipalAccessValidationError is the validation error returned by
+// PrincipalAccess.Validate if the designated constraints aren't met.
+type PrincipalAccessValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e PrincipalAccessValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e PrincipalAccessValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e PrincipalAccessValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e PrincipalAccessValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e PrincipalAccessValidationError) ErrorName() string { return "PrincipalAccessValidationError" }
+
+// Error satisfies the builtin error interface
+func (e PrincipalAccessValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sPrincipalAccess.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = PrincipalAccessValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = PrincipalAccessValidationError{}
+
+// Validate checks the field values on AccessGrant with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AccessGrant) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AccessGrant with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in AccessGrantMultiError, or
+// nil if none found.
+func (m *AccessGrant) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AccessGrant) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ResourceUri
+
+	// no validation rules for Inherited
+
+	// no validation rules for Match
+
+	switch v := m.Source.(type) {
+	case *AccessGrant_Role:
+		if v == nil {
+			err := AccessGrantValidationError{
+				field:  "Source",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetRole()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AccessGrantValidationError{
+						field:  "Role",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AccessGrantValidationError{
+						field:  "Role",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetRole()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AccessGrantValidationError{
+					field:  "Role",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *AccessGrant_Direct:
+		if v == nil {
+			err := AccessGrantValidationError{
+				field:  "Source",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetDirect()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AccessGrantValidationError{
+						field:  "Direct",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AccessGrantValidationError{
+						field:  "Direct",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetDirect()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AccessGrantValidationError{
+					field:  "Direct",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return AccessGrantMultiError(errors)
+	}
+
+	return nil
+}
+
+// AccessGrantMultiError is an error wrapping multiple validation errors
+// returned by AccessGrant.ValidateAll() if the designated constraints aren't met.
+type AccessGrantMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AccessGrantMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AccessGrantMultiError) AllErrors() []error { return m }
+
+// AccessGrantValidationError is the validation error returned by
+// AccessGrant.Validate if the designated constraints aren't met.
+type AccessGrantValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AccessGrantValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AccessGrantValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AccessGrantValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AccessGrantValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AccessGrantValidationError) ErrorName() string { return "AccessGrantValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AccessGrantValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAccessGrant.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AccessGrantValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AccessGrantValidationError{}
+
+// Validate checks the field values on AccessGrantRole with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *AccessGrantRole) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AccessGrantRole with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AccessGrantRoleMultiError, or nil if none found.
+func (m *AccessGrantRole) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AccessGrantRole) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	// no validation rules for Name
+
+	if len(errors) > 0 {
+		return AccessGrantRoleMultiError(errors)
+	}
+
+	return nil
+}
+
+// AccessGrantRoleMultiError is an error wrapping multiple validation errors
+// returned by AccessGrantRole.ValidateAll() if the designated constraints
+// aren't met.
+type AccessGrantRoleMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AccessGrantRoleMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AccessGrantRoleMultiError) AllErrors() []error { return m }
+
+// AccessGrantRoleValidationError is the validation error returned by
+// AccessGrantRole.Validate if the designated constraints aren't met.
+type AccessGrantRoleValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AccessGrantRoleValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AccessGrantRoleValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AccessGrantRoleValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AccessGrantRoleValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AccessGrantRoleValidationError) ErrorName() string { return "AccessGrantRoleValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AccessGrantRoleValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAccessGrantRole.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AccessGrantRoleValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AccessGrantRoleValidationError{}
+
+// Validate checks the field values on AccessGrantDirect with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *AccessGrantDirect) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AccessGrantDirect with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AccessGrantDirectMultiError, or nil if none found.
+func (m *AccessGrantDirect) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AccessGrantDirect) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return AccessGrantDirectMultiError(errors)
+	}
+
+	return nil
+}
+
+// AccessGrantDirectMultiError is an error wrapping multiple validation errors
+// returned by AccessGrantDirect.ValidateAll() if the designated constraints
+// aren't met.
+type AccessGrantDirectMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AccessGrantDirectMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AccessGrantDirectMultiError) AllErrors() []error { return m }
+
+// AccessGrantDirectValidationError is the validation error returned by
+// AccessGrantDirect.Validate if the designated constraints aren't met.
+type AccessGrantDirectValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AccessGrantDirectValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AccessGrantDirectValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AccessGrantDirectValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AccessGrantDirectValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AccessGrantDirectValidationError) ErrorName() string {
+	return "AccessGrantDirectValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AccessGrantDirectValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAccessGrantDirect.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AccessGrantDirectValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AccessGrantDirectValidationError{}
+
+// Validate checks the field values on Group with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Group) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Group with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in GroupMultiError, or nil if none found.
+func (m *Group) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Group) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	// no validation rules for OrganisationId
+
+	// no validation rules for ProjectName
+
+	// no validation rules for Name
+
+	// no validation rules for Description
+
+	// no validation rules for PrincipalId
+
+	if all {
+		switch v := interface{}(m.GetCreatedAt()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GroupValidationError{
+					field:  "CreatedAt",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GroupValidationError{
+					field:  "CreatedAt",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCreatedAt()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GroupValidationError{
+				field:  "CreatedAt",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetUpdatedAt()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GroupValidationError{
+					field:  "UpdatedAt",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GroupValidationError{
+					field:  "UpdatedAt",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUpdatedAt()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GroupValidationError{
+				field:  "UpdatedAt",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GroupMultiError(errors)
+	}
+
+	return nil
+}
+
+// GroupMultiError is an error wrapping multiple validation errors returned by
+// Group.ValidateAll() if the designated constraints aren't met.
+type GroupMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GroupMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GroupMultiError) AllErrors() []error { return m }
+
+// GroupValidationError is the validation error returned by Group.Validate if
+// the designated constraints aren't met.
+type GroupValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GroupValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GroupValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GroupValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GroupValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GroupValidationError) ErrorName() string { return "GroupValidationError" }
+
+// Error satisfies the builtin error interface
+func (e GroupValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGroup.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GroupValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GroupValidationError{}
+
+// Validate checks the field values on CreateGroupRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreateGroupRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreateGroupRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CreateGroupRequestMultiError, or nil if none found.
+func (m *CreateGroupRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreateGroupRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if l := utf8.RuneCountInString(m.GetProjectName()); l < 1 || l > 32 {
+		err := CreateGroupRequestValidationError{
+			field:  "ProjectName",
+			reason: "value length must be between 1 and 32 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_CreateGroupRequest_ProjectName_Pattern.MatchString(m.GetProjectName()) {
+		err := CreateGroupRequestValidationError{
+			field:  "ProjectName",
+			reason: "value does not match regex pattern \"^[a-z0-9-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if l := utf8.RuneCountInString(m.GetName()); l < 1 || l > 64 {
+		err := CreateGroupRequestValidationError{
+			field:  "Name",
+			reason: "value length must be between 1 and 64 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_CreateGroupRequest_Name_Pattern.MatchString(m.GetName()) {
+		err := CreateGroupRequestValidationError{
+			field:  "Name",
+			reason: "value does not match regex pattern \"^[a-z0-9-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetDescription()) > 1024 {
+		err := CreateGroupRequestValidationError{
+			field:  "Description",
+			reason: "value length must be at most 1024 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return CreateGroupRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreateGroupRequestMultiError is an error wrapping multiple validation errors
+// returned by CreateGroupRequest.ValidateAll() if the designated constraints
+// aren't met.
+type CreateGroupRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreateGroupRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreateGroupRequestMultiError) AllErrors() []error { return m }
+
+// CreateGroupRequestValidationError is the validation error returned by
+// CreateGroupRequest.Validate if the designated constraints aren't met.
+type CreateGroupRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateGroupRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateGroupRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateGroupRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateGroupRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateGroupRequestValidationError) ErrorName() string {
+	return "CreateGroupRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreateGroupRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateGroupRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateGroupRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateGroupRequestValidationError{}
+
+var _CreateGroupRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+var _CreateGroupRequest_Name_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+// Validate checks the field values on GetGroupRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *GetGroupRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetGroupRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetGroupRequestMultiError, or nil if none found.
+func (m *GetGroupRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetGroupRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if l := utf8.RuneCountInString(m.GetProjectName()); l < 1 || l > 32 {
+		err := GetGroupRequestValidationError{
+			field:  "ProjectName",
+			reason: "value length must be between 1 and 32 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_GetGroupRequest_ProjectName_Pattern.MatchString(m.GetProjectName()) {
+		err := GetGroupRequestValidationError{
+			field:  "ProjectName",
+			reason: "value does not match regex pattern \"^[a-z0-9-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if l := utf8.RuneCountInString(m.GetName()); l < 1 || l > 64 {
+		err := GetGroupRequestValidationError{
+			field:  "Name",
+			reason: "value length must be between 1 and 64 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_GetGroupRequest_Name_Pattern.MatchString(m.GetName()) {
+		err := GetGroupRequestValidationError{
+			field:  "Name",
+			reason: "value does not match regex pattern \"^[a-z0-9-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return GetGroupRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetGroupRequestMultiError is an error wrapping multiple validation errors
+// returned by GetGroupRequest.ValidateAll() if the designated constraints
+// aren't met.
+type GetGroupRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetGroupRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetGroupRequestMultiError) AllErrors() []error { return m }
+
+// GetGroupRequestValidationError is the validation error returned by
+// GetGroupRequest.Validate if the designated constraints aren't met.
+type GetGroupRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetGroupRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetGroupRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetGroupRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetGroupRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetGroupRequestValidationError) ErrorName() string { return "GetGroupRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e GetGroupRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetGroupRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetGroupRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetGroupRequestValidationError{}
+
+var _GetGroupRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+var _GetGroupRequest_Name_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+// Validate checks the field values on UpdateGroupRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdateGroupRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateGroupRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UpdateGroupRequestMultiError, or nil if none found.
+func (m *UpdateGroupRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateGroupRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if l := utf8.RuneCountInString(m.GetProjectName()); l < 1 || l > 32 {
+		err := UpdateGroupRequestValidationError{
+			field:  "ProjectName",
+			reason: "value length must be between 1 and 32 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_UpdateGroupRequest_ProjectName_Pattern.MatchString(m.GetProjectName()) {
+		err := UpdateGroupRequestValidationError{
+			field:  "ProjectName",
+			reason: "value does not match regex pattern \"^[a-z0-9-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if l := utf8.RuneCountInString(m.GetName()); l < 1 || l > 64 {
+		err := UpdateGroupRequestValidationError{
+			field:  "Name",
+			reason: "value length must be between 1 and 64 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_UpdateGroupRequest_Name_Pattern.MatchString(m.GetName()) {
+		err := UpdateGroupRequestValidationError{
+			field:  "Name",
+			reason: "value does not match regex pattern \"^[a-z0-9-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetDescription()) > 1024 {
+		err := UpdateGroupRequestValidationError{
+			field:  "Description",
+			reason: "value length must be at most 1024 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return UpdateGroupRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateGroupRequestMultiError is an error wrapping multiple validation errors
+// returned by UpdateGroupRequest.ValidateAll() if the designated constraints
+// aren't met.
+type UpdateGroupRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateGroupRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateGroupRequestMultiError) AllErrors() []error { return m }
+
+// UpdateGroupRequestValidationError is the validation error returned by
+// UpdateGroupRequest.Validate if the designated constraints aren't met.
+type UpdateGroupRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateGroupRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateGroupRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateGroupRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateGroupRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateGroupRequestValidationError) ErrorName() string {
+	return "UpdateGroupRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateGroupRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateGroupRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateGroupRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateGroupRequestValidationError{}
+
+var _UpdateGroupRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+var _UpdateGroupRequest_Name_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+// Validate checks the field values on DeleteGroupRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DeleteGroupRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeleteGroupRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeleteGroupRequestMultiError, or nil if none found.
+func (m *DeleteGroupRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeleteGroupRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if l := utf8.RuneCountInString(m.GetProjectName()); l < 1 || l > 32 {
+		err := DeleteGroupRequestValidationError{
+			field:  "ProjectName",
+			reason: "value length must be between 1 and 32 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_DeleteGroupRequest_ProjectName_Pattern.MatchString(m.GetProjectName()) {
+		err := DeleteGroupRequestValidationError{
+			field:  "ProjectName",
+			reason: "value does not match regex pattern \"^[a-z0-9-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if l := utf8.RuneCountInString(m.GetName()); l < 1 || l > 64 {
+		err := DeleteGroupRequestValidationError{
+			field:  "Name",
+			reason: "value length must be between 1 and 64 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_DeleteGroupRequest_Name_Pattern.MatchString(m.GetName()) {
+		err := DeleteGroupRequestValidationError{
+			field:  "Name",
+			reason: "value does not match regex pattern \"^[a-z0-9-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return DeleteGroupRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeleteGroupRequestMultiError is an error wrapping multiple validation errors
+// returned by DeleteGroupRequest.ValidateAll() if the designated constraints
+// aren't met.
+type DeleteGroupRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeleteGroupRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeleteGroupRequestMultiError) AllErrors() []error { return m }
+
+// DeleteGroupRequestValidationError is the validation error returned by
+// DeleteGroupRequest.Validate if the designated constraints aren't met.
+type DeleteGroupRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeleteGroupRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeleteGroupRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeleteGroupRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeleteGroupRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeleteGroupRequestValidationError) ErrorName() string {
+	return "DeleteGroupRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeleteGroupRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeleteGroupRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeleteGroupRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeleteGroupRequestValidationError{}
+
+var _DeleteGroupRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+var _DeleteGroupRequest_Name_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+// Validate checks the field values on ListGroupsRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ListGroupsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListGroupsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListGroupsRequestMultiError, or nil if none found.
+func (m *ListGroupsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListGroupsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if l := utf8.RuneCountInString(m.GetProjectName()); l < 1 || l > 32 {
+		err := ListGroupsRequestValidationError{
+			field:  "ProjectName",
+			reason: "value length must be between 1 and 32 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_ListGroupsRequest_ProjectName_Pattern.MatchString(m.GetProjectName()) {
+		err := ListGroupsRequestValidationError{
+			field:  "ProjectName",
+			reason: "value does not match regex pattern \"^[a-z0-9-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.Pagination != nil {
+
+		if all {
+			switch v := interface{}(m.GetPagination()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListGroupsRequestValidationError{
+						field:  "Pagination",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListGroupsRequestValidationError{
+						field:  "Pagination",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListGroupsRequestValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if m.Search != nil {
+
+		if utf8.RuneCountInString(m.GetSearch()) > 128 {
+			err := ListGroupsRequestValidationError{
+				field:  "Search",
+				reason: "value length must be at most 128 runes",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ListGroupsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListGroupsRequestMultiError is an error wrapping multiple validation errors
+// returned by ListGroupsRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ListGroupsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListGroupsRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListGroupsRequestMultiError) AllErrors() []error { return m }
+
+// ListGroupsRequestValidationError is the validation error returned by
+// ListGroupsRequest.Validate if the designated constraints aren't met.
+type ListGroupsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListGroupsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListGroupsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListGroupsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListGroupsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListGroupsRequestValidationError) ErrorName() string {
+	return "ListGroupsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListGroupsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListGroupsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListGroupsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListGroupsRequestValidationError{}
+
+var _ListGroupsRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+// Validate checks the field values on ListGroupsResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListGroupsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListGroupsResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListGroupsResponseMultiError, or nil if none found.
+func (m *ListGroupsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListGroupsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetGroups() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListGroupsResponseValidationError{
+						field:  fmt.Sprintf("Groups[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListGroupsResponseValidationError{
+						field:  fmt.Sprintf("Groups[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListGroupsResponseValidationError{
+					field:  fmt.Sprintf("Groups[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if all {
+		switch v := interface{}(m.GetPagination()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ListGroupsResponseValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ListGroupsResponseValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ListGroupsResponseValidationError{
+				field:  "Pagination",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ListGroupsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListGroupsResponseMultiError is an error wrapping multiple validation errors
+// returned by ListGroupsResponse.ValidateAll() if the designated constraints
+// aren't met.
+type ListGroupsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListGroupsResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListGroupsResponseMultiError) AllErrors() []error { return m }
+
+// ListGroupsResponseValidationError is the validation error returned by
+// ListGroupsResponse.Validate if the designated constraints aren't met.
+type ListGroupsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListGroupsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListGroupsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListGroupsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListGroupsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListGroupsResponseValidationError) ErrorName() string {
+	return "ListGroupsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListGroupsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListGroupsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListGroupsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListGroupsResponseValidationError{}
+
+// Validate checks the field values on AddGroupMembersRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *AddGroupMembersRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AddGroupMembersRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AddGroupMembersRequestMultiError, or nil if none found.
+func (m *AddGroupMembersRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AddGroupMembersRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if l := utf8.RuneCountInString(m.GetProjectName()); l < 1 || l > 32 {
+		err := AddGroupMembersRequestValidationError{
+			field:  "ProjectName",
+			reason: "value length must be between 1 and 32 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_AddGroupMembersRequest_ProjectName_Pattern.MatchString(m.GetProjectName()) {
+		err := AddGroupMembersRequestValidationError{
+			field:  "ProjectName",
+			reason: "value does not match regex pattern \"^[a-z0-9-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if l := utf8.RuneCountInString(m.GetName()); l < 1 || l > 64 {
+		err := AddGroupMembersRequestValidationError{
+			field:  "Name",
+			reason: "value length must be between 1 and 64 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_AddGroupMembersRequest_Name_Pattern.MatchString(m.GetName()) {
+		err := AddGroupMembersRequestValidationError{
+			field:  "Name",
+			reason: "value does not match regex pattern \"^[a-z0-9-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if l := len(m.GetPrincipalIds()); l < 1 || l > 100 {
+		err := AddGroupMembersRequestValidationError{
+			field:  "PrincipalIds",
+			reason: "value must contain between 1 and 100 items, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	_AddGroupMembersRequest_PrincipalIds_Unique := make(map[string]struct{}, len(m.GetPrincipalIds()))
+
+	for idx, item := range m.GetPrincipalIds() {
+		_, _ = idx, item
+
+		if _, exists := _AddGroupMembersRequest_PrincipalIds_Unique[item]; exists {
+			err := AddGroupMembersRequestValidationError{
+				field:  fmt.Sprintf("PrincipalIds[%v]", idx),
+				reason: "repeated value must contain unique items",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		} else {
+			_AddGroupMembersRequest_PrincipalIds_Unique[item] = struct{}{}
+		}
+
+		if utf8.RuneCountInString(item) < 1 {
+			err := AddGroupMembersRequestValidationError{
+				field:  fmt.Sprintf("PrincipalIds[%v]", idx),
+				reason: "value length must be at least 1 runes",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return AddGroupMembersRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// AddGroupMembersRequestMultiError is an error wrapping multiple validation
+// errors returned by AddGroupMembersRequest.ValidateAll() if the designated
+// constraints aren't met.
+type AddGroupMembersRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AddGroupMembersRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AddGroupMembersRequestMultiError) AllErrors() []error { return m }
+
+// AddGroupMembersRequestValidationError is the validation error returned by
+// AddGroupMembersRequest.Validate if the designated constraints aren't met.
+type AddGroupMembersRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AddGroupMembersRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AddGroupMembersRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AddGroupMembersRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AddGroupMembersRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AddGroupMembersRequestValidationError) ErrorName() string {
+	return "AddGroupMembersRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AddGroupMembersRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAddGroupMembersRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AddGroupMembersRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AddGroupMembersRequestValidationError{}
+
+var _AddGroupMembersRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+var _AddGroupMembersRequest_Name_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+// Validate checks the field values on AddGroupMembersResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *AddGroupMembersResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AddGroupMembersResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AddGroupMembersResponseMultiError, or nil if none found.
+func (m *AddGroupMembersResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AddGroupMembersResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return AddGroupMembersResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// AddGroupMembersResponseMultiError is an error wrapping multiple validation
+// errors returned by AddGroupMembersResponse.ValidateAll() if the designated
+// constraints aren't met.
+type AddGroupMembersResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AddGroupMembersResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AddGroupMembersResponseMultiError) AllErrors() []error { return m }
+
+// AddGroupMembersResponseValidationError is the validation error returned by
+// AddGroupMembersResponse.Validate if the designated constraints aren't met.
+type AddGroupMembersResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AddGroupMembersResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AddGroupMembersResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AddGroupMembersResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AddGroupMembersResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AddGroupMembersResponseValidationError) ErrorName() string {
+	return "AddGroupMembersResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AddGroupMembersResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAddGroupMembersResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AddGroupMembersResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AddGroupMembersResponseValidationError{}
+
+// Validate checks the field values on RemoveGroupMembersRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RemoveGroupMembersRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RemoveGroupMembersRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// RemoveGroupMembersRequestMultiError, or nil if none found.
+func (m *RemoveGroupMembersRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RemoveGroupMembersRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if l := utf8.RuneCountInString(m.GetProjectName()); l < 1 || l > 32 {
+		err := RemoveGroupMembersRequestValidationError{
+			field:  "ProjectName",
+			reason: "value length must be between 1 and 32 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_RemoveGroupMembersRequest_ProjectName_Pattern.MatchString(m.GetProjectName()) {
+		err := RemoveGroupMembersRequestValidationError{
+			field:  "ProjectName",
+			reason: "value does not match regex pattern \"^[a-z0-9-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if l := utf8.RuneCountInString(m.GetName()); l < 1 || l > 64 {
+		err := RemoveGroupMembersRequestValidationError{
+			field:  "Name",
+			reason: "value length must be between 1 and 64 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_RemoveGroupMembersRequest_Name_Pattern.MatchString(m.GetName()) {
+		err := RemoveGroupMembersRequestValidationError{
+			field:  "Name",
+			reason: "value does not match regex pattern \"^[a-z0-9-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if l := len(m.GetPrincipalIds()); l < 1 || l > 100 {
+		err := RemoveGroupMembersRequestValidationError{
+			field:  "PrincipalIds",
+			reason: "value must contain between 1 and 100 items, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	_RemoveGroupMembersRequest_PrincipalIds_Unique := make(map[string]struct{}, len(m.GetPrincipalIds()))
+
+	for idx, item := range m.GetPrincipalIds() {
+		_, _ = idx, item
+
+		if _, exists := _RemoveGroupMembersRequest_PrincipalIds_Unique[item]; exists {
+			err := RemoveGroupMembersRequestValidationError{
+				field:  fmt.Sprintf("PrincipalIds[%v]", idx),
+				reason: "repeated value must contain unique items",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		} else {
+			_RemoveGroupMembersRequest_PrincipalIds_Unique[item] = struct{}{}
+		}
+
+		if utf8.RuneCountInString(item) < 1 {
+			err := RemoveGroupMembersRequestValidationError{
+				field:  fmt.Sprintf("PrincipalIds[%v]", idx),
+				reason: "value length must be at least 1 runes",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return RemoveGroupMembersRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// RemoveGroupMembersRequestMultiError is an error wrapping multiple validation
+// errors returned by RemoveGroupMembersRequest.ValidateAll() if the
+// designated constraints aren't met.
+type RemoveGroupMembersRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RemoveGroupMembersRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RemoveGroupMembersRequestMultiError) AllErrors() []error { return m }
+
+// RemoveGroupMembersRequestValidationError is the validation error returned by
+// RemoveGroupMembersRequest.Validate if the designated constraints aren't met.
+type RemoveGroupMembersRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RemoveGroupMembersRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RemoveGroupMembersRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RemoveGroupMembersRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RemoveGroupMembersRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RemoveGroupMembersRequestValidationError) ErrorName() string {
+	return "RemoveGroupMembersRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RemoveGroupMembersRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRemoveGroupMembersRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RemoveGroupMembersRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RemoveGroupMembersRequestValidationError{}
+
+var _RemoveGroupMembersRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+var _RemoveGroupMembersRequest_Name_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+// Validate checks the field values on RemoveGroupMembersResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RemoveGroupMembersResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RemoveGroupMembersResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// RemoveGroupMembersResponseMultiError, or nil if none found.
+func (m *RemoveGroupMembersResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RemoveGroupMembersResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return RemoveGroupMembersResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RemoveGroupMembersResponseMultiError is an error wrapping multiple
+// validation errors returned by RemoveGroupMembersResponse.ValidateAll() if
+// the designated constraints aren't met.
+type RemoveGroupMembersResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RemoveGroupMembersResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RemoveGroupMembersResponseMultiError) AllErrors() []error { return m }
+
+// RemoveGroupMembersResponseValidationError is the validation error returned
+// by RemoveGroupMembersResponse.Validate if the designated constraints aren't met.
+type RemoveGroupMembersResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RemoveGroupMembersResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RemoveGroupMembersResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RemoveGroupMembersResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RemoveGroupMembersResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RemoveGroupMembersResponseValidationError) ErrorName() string {
+	return "RemoveGroupMembersResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RemoveGroupMembersResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRemoveGroupMembersResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RemoveGroupMembersResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RemoveGroupMembersResponseValidationError{}
+
+// Validate checks the field values on ListGroupMembersRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListGroupMembersRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListGroupMembersRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListGroupMembersRequestMultiError, or nil if none found.
+func (m *ListGroupMembersRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListGroupMembersRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if l := utf8.RuneCountInString(m.GetProjectName()); l < 1 || l > 32 {
+		err := ListGroupMembersRequestValidationError{
+			field:  "ProjectName",
+			reason: "value length must be between 1 and 32 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_ListGroupMembersRequest_ProjectName_Pattern.MatchString(m.GetProjectName()) {
+		err := ListGroupMembersRequestValidationError{
+			field:  "ProjectName",
+			reason: "value does not match regex pattern \"^[a-z0-9-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if l := utf8.RuneCountInString(m.GetName()); l < 1 || l > 64 {
+		err := ListGroupMembersRequestValidationError{
+			field:  "Name",
+			reason: "value length must be between 1 and 64 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_ListGroupMembersRequest_Name_Pattern.MatchString(m.GetName()) {
+		err := ListGroupMembersRequestValidationError{
+			field:  "Name",
+			reason: "value does not match regex pattern \"^[a-z0-9-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.Pagination != nil {
+
+		if all {
+			switch v := interface{}(m.GetPagination()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListGroupMembersRequestValidationError{
+						field:  "Pagination",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListGroupMembersRequestValidationError{
+						field:  "Pagination",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListGroupMembersRequestValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ListGroupMembersRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListGroupMembersRequestMultiError is an error wrapping multiple validation
+// errors returned by ListGroupMembersRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ListGroupMembersRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListGroupMembersRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListGroupMembersRequestMultiError) AllErrors() []error { return m }
+
+// ListGroupMembersRequestValidationError is the validation error returned by
+// ListGroupMembersRequest.Validate if the designated constraints aren't met.
+type ListGroupMembersRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListGroupMembersRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListGroupMembersRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListGroupMembersRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListGroupMembersRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListGroupMembersRequestValidationError) ErrorName() string {
+	return "ListGroupMembersRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListGroupMembersRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListGroupMembersRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListGroupMembersRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListGroupMembersRequestValidationError{}
+
+var _ListGroupMembersRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+var _ListGroupMembersRequest_Name_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+// Validate checks the field values on GroupMember with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *GroupMember) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GroupMember with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in GroupMemberMultiError, or
+// nil if none found.
+func (m *GroupMember) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GroupMember) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for PrincipalId
+
+	if all {
+		switch v := interface{}(m.GetCreatedAt()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GroupMemberValidationError{
+					field:  "CreatedAt",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GroupMemberValidationError{
+					field:  "CreatedAt",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCreatedAt()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GroupMemberValidationError{
+				field:  "CreatedAt",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GroupMemberMultiError(errors)
+	}
+
+	return nil
+}
+
+// GroupMemberMultiError is an error wrapping multiple validation errors
+// returned by GroupMember.ValidateAll() if the designated constraints aren't met.
+type GroupMemberMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GroupMemberMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GroupMemberMultiError) AllErrors() []error { return m }
+
+// GroupMemberValidationError is the validation error returned by
+// GroupMember.Validate if the designated constraints aren't met.
+type GroupMemberValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GroupMemberValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GroupMemberValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GroupMemberValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GroupMemberValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GroupMemberValidationError) ErrorName() string { return "GroupMemberValidationError" }
+
+// Error satisfies the builtin error interface
+func (e GroupMemberValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGroupMember.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GroupMemberValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GroupMemberValidationError{}
+
+// Validate checks the field values on ListGroupMembersResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListGroupMembersResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListGroupMembersResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListGroupMembersResponseMultiError, or nil if none found.
+func (m *ListGroupMembersResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListGroupMembersResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetMembers() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListGroupMembersResponseValidationError{
+						field:  fmt.Sprintf("Members[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListGroupMembersResponseValidationError{
+						field:  fmt.Sprintf("Members[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListGroupMembersResponseValidationError{
+					field:  fmt.Sprintf("Members[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if all {
+		switch v := interface{}(m.GetPagination()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ListGroupMembersResponseValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ListGroupMembersResponseValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ListGroupMembersResponseValidationError{
+				field:  "Pagination",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ListGroupMembersResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListGroupMembersResponseMultiError is an error wrapping multiple validation
+// errors returned by ListGroupMembersResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ListGroupMembersResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListGroupMembersResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListGroupMembersResponseMultiError) AllErrors() []error { return m }
+
+// ListGroupMembersResponseValidationError is the validation error returned by
+// ListGroupMembersResponse.Validate if the designated constraints aren't met.
+type ListGroupMembersResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListGroupMembersResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListGroupMembersResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListGroupMembersResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListGroupMembersResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListGroupMembersResponseValidationError) ErrorName() string {
+	return "ListGroupMembersResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListGroupMembersResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListGroupMembersResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListGroupMembersResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListGroupMembersResponseValidationError{}
+
+// Validate checks the field values on ListGroupsForPrincipalRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListGroupsForPrincipalRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListGroupsForPrincipalRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ListGroupsForPrincipalRequestMultiError, or nil if none found.
+func (m *ListGroupsForPrincipalRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListGroupsForPrincipalRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if l := utf8.RuneCountInString(m.GetProjectName()); l < 1 || l > 32 {
+		err := ListGroupsForPrincipalRequestValidationError{
+			field:  "ProjectName",
+			reason: "value length must be between 1 and 32 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_ListGroupsForPrincipalRequest_ProjectName_Pattern.MatchString(m.GetProjectName()) {
+		err := ListGroupsForPrincipalRequestValidationError{
+			field:  "ProjectName",
+			reason: "value does not match regex pattern \"^[a-z0-9-]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetPrincipalId()) < 1 {
+		err := ListGroupsForPrincipalRequestValidationError{
+			field:  "PrincipalId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.Pagination != nil {
+
+		if all {
+			switch v := interface{}(m.GetPagination()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListGroupsForPrincipalRequestValidationError{
+						field:  "Pagination",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListGroupsForPrincipalRequestValidationError{
+						field:  "Pagination",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListGroupsForPrincipalRequestValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ListGroupsForPrincipalRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListGroupsForPrincipalRequestMultiError is an error wrapping multiple
+// validation errors returned by ListGroupsForPrincipalRequest.ValidateAll()
+// if the designated constraints aren't met.
+type ListGroupsForPrincipalRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListGroupsForPrincipalRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListGroupsForPrincipalRequestMultiError) AllErrors() []error { return m }
+
+// ListGroupsForPrincipalRequestValidationError is the validation error
+// returned by ListGroupsForPrincipalRequest.Validate if the designated
+// constraints aren't met.
+type ListGroupsForPrincipalRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListGroupsForPrincipalRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListGroupsForPrincipalRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListGroupsForPrincipalRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListGroupsForPrincipalRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListGroupsForPrincipalRequestValidationError) ErrorName() string {
+	return "ListGroupsForPrincipalRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListGroupsForPrincipalRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListGroupsForPrincipalRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListGroupsForPrincipalRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListGroupsForPrincipalRequestValidationError{}
+
+var _ListGroupsForPrincipalRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
+
+// Validate checks the field values on ListGroupsForPrincipalResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListGroupsForPrincipalResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListGroupsForPrincipalResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ListGroupsForPrincipalResponseMultiError, or nil if none found.
+func (m *ListGroupsForPrincipalResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListGroupsForPrincipalResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetGroups() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListGroupsForPrincipalResponseValidationError{
+						field:  fmt.Sprintf("Groups[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListGroupsForPrincipalResponseValidationError{
+						field:  fmt.Sprintf("Groups[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListGroupsForPrincipalResponseValidationError{
+					field:  fmt.Sprintf("Groups[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if all {
+		switch v := interface{}(m.GetPagination()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ListGroupsForPrincipalResponseValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ListGroupsForPrincipalResponseValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ListGroupsForPrincipalResponseValidationError{
+				field:  "Pagination",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ListGroupsForPrincipalResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListGroupsForPrincipalResponseMultiError is an error wrapping multiple
+// validation errors returned by ListGroupsForPrincipalResponse.ValidateAll()
+// if the designated constraints aren't met.
+type ListGroupsForPrincipalResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListGroupsForPrincipalResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListGroupsForPrincipalResponseMultiError) AllErrors() []error { return m }
+
+// ListGroupsForPrincipalResponseValidationError is the validation error
+// returned by ListGroupsForPrincipalResponse.Validate if the designated
+// constraints aren't met.
+type ListGroupsForPrincipalResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListGroupsForPrincipalResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListGroupsForPrincipalResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListGroupsForPrincipalResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListGroupsForPrincipalResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListGroupsForPrincipalResponseValidationError) ErrorName() string {
+	return "ListGroupsForPrincipalResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListGroupsForPrincipalResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListGroupsForPrincipalResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListGroupsForPrincipalResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListGroupsForPrincipalResponseValidationError{}
