@@ -49,90 +49,127 @@ const (
 	PermissionsService_RemoveGroupMembers_FullMethodName                         = "/permio.permissions.v1.PermissionsService/RemoveGroupMembers"
 	PermissionsService_ListGroupMembers_FullMethodName                           = "/permio.permissions.v1.PermissionsService/ListGroupMembers"
 	PermissionsService_ListGroupsForPrincipal_FullMethodName                     = "/permio.permissions.v1.PermissionsService/ListGroupsForPrincipal"
+	PermissionsService_WhoAmI_FullMethodName                                     = "/permio.permissions.v1.PermissionsService/WhoAmI"
 )
 
 // PermissionsServiceClient is the client API for PermissionsService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PermissionsServiceClient interface {
-	// CreatePermission creates a new permission. It is idempotent and will update the permission if it already exists.
-	// Required Permissions:
-	//   - permission.create on /organisation/{organisation_id}
+	// CreatePermission creates a permission in a project. Permission names are unique within a project; projects share
+	// nothing, so the same name can exist in several projects.
+	//
+	// It is idempotent by name. If the project already has a permission with this name, no new permission is created:
+	// the existing one is returned. If the request has a non-empty description that differs, the description is first
+	// set to it; an empty description leaves the existing one unchanged (use UpdatePermission to clear it). Changing
+	// an existing permission this way needs the same access as UpdatePermission; returning it unchanged needs the
+	// access of GetPermission. The caller who actually creates a permission can manage that permission from then on.
+	// Access: an API key of the project with full access; in the dashboard, organisation admins.
 	CreatePermission(ctx context.Context, in *CreatePermissionRequest, opts ...grpc.CallOption) (*Permission, error)
-	// GetPermission returns a permission by name.
-	// Required Permissions:
-	//   - permission.get on /organisation/{organisation_id}/permission/{name}
+	// GetPermission returns a permission by name. It returns NOT_FOUND if the project has no permission with this name.
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	GetPermission(ctx context.Context, in *GetPermissionRequest, opts ...grpc.CallOption) (*Permission, error)
-	// UpdatePermission updates a permission. It will return not found if the permission does not exist.
-	// Required Permissions:
-	//   - permission.update on /organisation/{organisation_id}/permission/{name}
+	// UpdatePermission replaces a permission's description and, if new_name is set, renames it. The description is
+	// always replaced: omitting it clears it. A rename is applied to every role and grant in the project that has the
+	// permission, so nobody gains or loses access by it. It returns NOT_FOUND if the permission does not exist and
+	// ALREADY_EXISTS if new_name is already taken in the project.
+	// Access: an API key of the project with full access; in the dashboard, organisation admins and the user who
+	// created the permission.
 	UpdatePermission(ctx context.Context, in *UpdatePermissionRequest, opts ...grpc.CallOption) (*Permission, error)
-	// DeletePermission deletes a permission. It is idempotent and will return ok whether the permission existed or not.
-	// Required Permissions:
-	//   - permission.delete on /organisation/{organisation_id}/permission/{name}
+	// DeletePermission deletes a permission and removes it from every role and grant in the project; a grant left with
+	// no permissions and no roles is deleted. It is idempotent: it returns OK whether the permission existed or not.
+	// Access: an API key of the project with full access; in the dashboard, organisation admins and the user who
+	// created the permission.
 	DeletePermission(ctx context.Context, in *DeletePermissionRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// ListPermissions returns a list of permissions.
-	// Required Permissions:
-	//   - permission.list on /organisation/{organisation_id}
+	// ListPermissions returns a page of the project's permissions, optionally filtered by name.
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	ListPermissions(ctx context.Context, in *ListPermissionsRequest, opts ...grpc.CallOption) (*ListPermissionsResponse, error)
-	// CreateRole creates a new role. It is idempotent and will update the role if it already exists.
-	// Required Permissions:
-	//   - role.create on /organisation/{organisation_id}
-	//   - permission.get on /organisation/{organisation_id}/permission/{permission_name} for each permission in the role
+	// CreateRole creates a role: a named set of permissions of the same project. Role names are unique within a
+	// project. Every permission in the request must exist in the project, or INVALID_ARGUMENT is returned.
+	//
+	// It is idempotent by name. If the project already has a role with this name, no new role is created: the existing
+	// one is returned. A non-empty description that differs replaces the existing one, and a non-empty list of
+	// permissions that differs (the order does not matter) replaces the existing permissions. An empty description or
+	// an empty list of permissions leaves that field unchanged; use UpdateRole to clear it. Changing an existing role
+	// this way needs the same access as UpdateRole; returning it unchanged needs the access of GetRole. The caller who
+	// actually creates a role can manage that role from then on.
+	// Access: an API key of the project with full access; in the dashboard, organisation admins.
 	CreateRole(ctx context.Context, in *CreateRoleRequest, opts ...grpc.CallOption) (*Role, error)
-	// GetRole returns a role by ID.
-	// Required Permissions:
-	//   - role.get on /organisation/{organisation_id}/role/{id}
+	// GetRole returns a role by ID. It returns NOT_FOUND if the project has no role with this ID.
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	GetRole(ctx context.Context, in *GetRoleRequest, opts ...grpc.CallOption) (*Role, error)
-	// UpdateRole updates a role. It will return not found if the role does not exist.
-	// Required Permissions:
-	//   - role.update on /organisation/{organisation_id}/role/{id}
+	// UpdateRole replaces a role's name, description and permissions with the request's. Every field is replaced:
+	// omitting description clears it and omitting permissions leaves the role with no permissions. Every permission in
+	// the request must exist in the project, or INVALID_ARGUMENT is returned. It returns NOT_FOUND if the role does not
+	// exist and ALREADY_EXISTS if another role in the project has the name.
+	// Access: an API key of the project with full access; in the dashboard, organisation admins and the user who
+	// created the role.
 	UpdateRole(ctx context.Context, in *UpdateRoleRequest, opts ...grpc.CallOption) (*Role, error)
-	// DeleteRole deletes a role. It is idempotent and will return ok whether the role existed or not.
-	// Required Permissions:
-	//   - role.delete on /organisation/{organisation_id}/role/{id}
+	// DeleteRole deletes a role and removes it from every grant in the project; a grant left with no permissions and no
+	// roles is deleted. It is idempotent: it returns OK whether the role existed or not.
+	// Access: an API key of the project with full access; in the dashboard, organisation admins and the user who
+	// created the role.
 	DeleteRole(ctx context.Context, in *DeleteRoleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// ListRoles returns a list of roles.
-	// Required Permissions:
-	//   - role.list on /organisation/{organisation_id}
+	// ListRoles returns a page of the project's roles, with their permissions, optionally filtered by name.
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	ListRoles(ctx context.Context, in *ListRolesRequest, opts ...grpc.CallOption) (*ListRolesResponse, error)
-	// GrantUserPermissionsAndRolesOnResource assigns permissions and roles to a user on a resource. It is additive and will not remove existing permissions or roles.
-	// Required Permissions:
-	//   - permission.get on /organisation/{organisation_id}/permission/{permission_name} for each permission
-	//   - role.get on /organisation/{organisation_id}/role/{role_id} for each role
-	//   - principal.assignment.create on /organisation/{organisation_id}/principal/{user_id}
+	// GrantUserPermissionsAndRolesOnResource grants permissions and roles to a principal on a resource URI. It is
+	// additive: what the principal already holds there is kept. The grant applies to the resource and every resource
+	// below it (see Check). user_id may be any principal ID, including "group:<slug>" to grant to a group (the group
+	// must exist). Every permission and role must exist in the project, or INVALID_ARGUMENT is returned. A principal
+	// that is new to the organisation counts towards its unique principals (billing).
+	// Access: an API key of the project with full access; in the dashboard, organisation admins.
 	GrantUserPermissionsAndRolesOnResource(ctx context.Context, in *GrantUserPermissionsAndRolesOnResourceRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// RevokeUserPermissionsAndRolesOnResource revokes permissions and roles from a user on a resource.
-	// Required Permissions:
-	//   - principal.assignment.delete on RevokeUserPermissionsAndRolesOnResourceRequest.resource_uri
+	// RevokeUserPermissionsAndRolesOnResource removes permissions and roles from a principal's grant on exactly
+	// resource_uri. It does not touch grants on other URIs: a grant on an ancestor of resource_uri (or a "_" wildcard
+	// URI that matches it) still applies, so the principal may still pass Check on resource_uri afterwards. Names that
+	// the grant does not hold, including names of permissions or roles that no longer exist, are ignored; empty lists
+	// change nothing. A grant left with no permissions and no roles is deleted, and a principal left with no grant or
+	// group membership in the organisation stops counting towards its unique principals.
+	// Access: an API key of the project with full access; in the dashboard, organisation admins.
 	RevokeUserPermissionsAndRolesOnResource(ctx context.Context, in *RevokeUserPermissionsAndRolesOnResourceRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// GetUserPermissionsAndRolesOnResource returns the permissions and roles assigned to a user on a resource.
-	// Required Permissions:
-	//   - principal.assignment.get on GetUserPermissionsAndRolesOnResourceRequest.resource_uri
+	// GetUserPermissionsAndRolesOnResource returns the permissions and roles granted to a principal on exactly
+	// resource_uri. Grants on ancestors or "_" wildcard URIs, and grants through groups, are not included: use Check or
+	// ListPrincipalsWithAccess for effective access. user_id may be any principal ID, including "group:<slug>".
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	GetUserPermissionsAndRolesOnResource(ctx context.Context, in *GetUserPermissionsAndRolesOnResourceRequest, opts ...grpc.CallOption) (*GetUserPermissionsAndRolesOnResourceResponse, error)
-	// ListPrincipals returns a list of principals.
-	// Required Permissions:
-	//   - principal.list on /organisation/{organisation_id}
+	// ListPrincipals returns a page of the principal IDs that hold at least one grant in the project, ordered by ID.
+	// Groups that hold grants are listed as "group:<slug>"; members who only hold access through a group are not.
+	// search filters by principal ID (a case-insensitive substring match): principals have no names.
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	ListPrincipals(ctx context.Context, in *ListPrincipalsRequest, opts ...grpc.CallOption) (*ListPrincipalsResponse, error)
-	// GetAllAssignmentsForPrincipal returns all assignments for a principal within an organisation.
-	// Required Permissions:
-	//   - principal.assignment.list on /organisation/{organisation_id}/principal/{principal_id}
+	// GetAllAssignmentsForPrincipal returns a page of a principal's grants in the project: one assignment per resource
+	// URI, with the permissions and roles granted there. Grants through groups are not included.
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	GetAllAssignmentsForPrincipal(ctx context.Context, in *GetAllAssignmentsForPrincipalRequest, opts ...grpc.CallOption) (*GetAllAssignmentsForPrincipalResponse, error)
-	// Check checks if a principal has the specified permissions on the specified resources
+	// Check checks whether a principal holds every one of the given permissions on every one of the given resources.
+	// A denial is not an error: the call succeeds with passed=false, and missing_permissions lists, per resource, the
+	// permissions the principal lacks. An error means the check could not be made (invalid request, caller not
+	// authorised, service unavailable); never treat an error as allowed.
+	//
+	// How grants apply:
+	//   - A grant on a resource URI applies to that resource and every resource below it: a grant on /docs applies to
+	//     /docs, /docs/1 and /docs/1/comments, but not to /docs-archive or /.
+	//   - A "_" segment in a granted URI matches exactly one segment: a grant on /docs/_/comments applies to
+	//     /docs/1/comments and /docs/2/comments/9, but not to /docs/1 or /docs/1/x/comments. In the URIs being checked
+	//     "_" is an ordinary segment, which only grants on "_" match.
+	//   - Grants to a group ("group:<slug>") apply to its members. A permission counts directly or through a role, and
+	//     only while it exists in the project.
+	//
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and
+	// admins. The caller must be allowed to check both the resources and the principal.
 	Check(ctx context.Context, in *CheckPermissionRequest, opts ...grpc.CallOption) (*CheckPermissionResponse, error)
-	// GetTotalRolesAndPermissionsForOrganisation returns the total number of roles and permissions for an organisation.
-	// Required Permissions:
-	//   - organisation.roles.and.permissions.total on /organisation/{organisation_id}
+	// GetTotalRolesAndPermissionsForOrganisation returns the number of roles and permissions across all projects of an
+	// organisation.
+	// Access: dashboard users of the organisation (members and admins). API keys cannot call it.
 	GetTotalRolesAndPermissionsForOrganisation(ctx context.Context, in *GetTotalRolesAndPermissionsForOrganisationRequest, opts ...grpc.CallOption) (*GetTotalRolesAndPermissionsForOrganisationResponse, error)
 	// BatchCheck checks whether a principal has the specified permissions on each of the specified resources and
 	// returns one result per resource, in request order. It evaluates exactly like Check (same resource URI inheritance,
 	// stored "_" wildcard and group rules, same fail-closed behaviour); a resource's result is allowed only if the
-	// principal has every requested permission on it.
-	// Required Permissions (the same as Check):
-	//   - permission.check on /organisation/{organisation_id}/project/{project_name}{resource_uri} for each resource
-	//   - permission.check on /organisation/{organisation_id}/project/{project_name}/principal/{principal_id}
+	// principal has every requested permission on it. A denial is a result with allowed=false, not an error.
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	BatchCheck(ctx context.Context, in *BatchCheckRequest, opts ...grpc.CallOption) (*BatchCheckResponse, error)
-	// ListAccess answers "where can this principal do this permission under under_uri?". It returns the scopes in which
+	// ListAccess answers "where, at or below under_uri, does this principal hold this permission?". It returns the scopes in which
 	// Check(principal_id, permission) passes for resources at or below under_uri, counting grants made to the principal
 	// directly, through roles, and through the groups the principal is a member of.
 	//   - If the principal holds the permission on under_uri itself (through a grant on under_uri, an ancestor, or a
@@ -142,9 +179,7 @@ type PermissionsServiceClient interface {
 	//     concrete URI (grants apply to the URI and everything below it) and PATTERN for a URI with "_" wildcard
 	//     segments. Scopes are ordered by uri and paginated.
 	//
-	// Required Permissions:
-	//   - permission.check on /organisation/{organisation_id}/project/{project_name}{under_uri}
-	//   - principal.assignment.get on /organisation/{organisation_id}/project/{project_name}/principal/{principal_id}
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	ListAccess(ctx context.Context, in *ListAccessRequest, opts ...grpc.CallOption) (*ListAccessResponse, error)
 	// ListPrincipalsWithAccess answers "who has access to resource_uri?". It lists the principals holding a grant on
 	// resource_uri, on an ancestor of it, or on a stored "_" wildcard URI that matches it; when permission is set, only
@@ -152,56 +187,48 @@ type PermissionsServiceClient interface {
 	// permission) passes through its own grants. Groups are listed as principals (is_group); with expand_groups their
 	// members are listed too, once per group, with via_group set. Entries are ordered by principal_id, then via_group,
 	// and paginated.
-	// Required Permissions:
-	//   - principal.list on /organisation/{organisation_id}/project/{project_name}
-	//   - principal.assignment.list on /organisation/{organisation_id}/project/{project_name}
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	ListPrincipalsWithAccess(ctx context.Context, in *ListPrincipalsWithAccessRequest, opts ...grpc.CallOption) (*ListPrincipalsWithAccessResponse, error)
 	// CreateGroup creates a group in a project. A group is a set of principals: grant permissions and roles to it with
 	// GrantUserPermissionsAndRolesOnResource using the principal ID "group:{name}" and every member holds them. Groups
 	// cannot contain groups. It returns ALREADY_EXISTS if the project already has a group with this name.
-	// Required Permissions:
-	//   - group.create on /organisation/{organisation_id}/project/{project_name}
+	// Access: an API key of the project with full access; in the dashboard, organisation admins.
 	CreateGroup(ctx context.Context, in *CreateGroupRequest, opts ...grpc.CallOption) (*Group, error)
-	// GetGroup returns a group by name.
-	// Required Permissions:
-	//   - group.get on /organisation/{organisation_id}/project/{project_name}/group/{name}
+	// GetGroup returns a group by name. It returns NOT_FOUND if the project has no group with this name.
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	GetGroup(ctx context.Context, in *GetGroupRequest, opts ...grpc.CallOption) (*Group, error)
 	// UpdateGroup updates a group's description. A group's name cannot be changed, because "group:{name}" is the
 	// principal ID its grants are stored under. It returns NOT_FOUND if the group does not exist.
-	// Required Permissions:
-	//   - group.update on /organisation/{organisation_id}/project/{project_name}/group/{name}
+	// Access: an API key of the project with full access; in the dashboard, organisation admins.
 	UpdateGroup(ctx context.Context, in *UpdateGroupRequest, opts ...grpc.CallOption) (*Group, error)
 	// DeleteGroup deletes a group together with its memberships and every grant made to it, in one transaction. It is
 	// idempotent and returns ok whether the group existed or not.
-	// Required Permissions:
-	//   - group.delete on /organisation/{organisation_id}/project/{project_name}/group/{name}
-	//   - principal.assignment.delete on /organisation/{organisation_id}/project/{project_name}
+	// Access: an API key of the project with full access; in the dashboard, organisation admins.
 	DeleteGroup(ctx context.Context, in *DeleteGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// ListGroups returns the groups in a project, ordered by name.
-	// Required Permissions:
-	//   - group.list on /organisation/{organisation_id}/project/{project_name}
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	ListGroups(ctx context.Context, in *ListGroupsRequest, opts ...grpc.CallOption) (*ListGroupsResponse, error)
 	// AddGroupMembers adds up to 100 principals to a group. Principals that are already members are reported, not
 	// re-added. Principal IDs starting with "group:" are rejected (groups cannot be nested). A principal that is new to
-	// the organisation counts towards its unique principals, exactly as if it had been granted something.
-	// Required Permissions:
-	//   - group.member.add on /organisation/{organisation_id}/project/{project_name}/group/{name}
-	//   - principal.assignment.create on /organisation/{organisation_id}/project/{project_name}
+	// the organisation counts towards its unique principals, exactly as if it had been granted something. Because a
+	// member holds every grant of the group, the caller must also be allowed to grant in the whole project.
+	// Access: an API key of the project with full access; in the dashboard, organisation admins.
 	AddGroupMembers(ctx context.Context, in *AddGroupMembersRequest, opts ...grpc.CallOption) (*AddGroupMembersResponse, error)
-	// RemoveGroupMembers removes up to 100 principals from a group. Principals that are not members are reported.
-	// Required Permissions:
-	//   - group.member.remove on /organisation/{organisation_id}/project/{project_name}/group/{name}
-	//   - principal.assignment.create on /organisation/{organisation_id}/project/{project_name}
+	// RemoveGroupMembers removes up to 100 principals from a group. Principals that are not members are reported. Because
+	// a removed member loses every grant of the group, the caller must also be allowed to revoke in the whole project.
+	// Access: an API key of the project with full access; in the dashboard, organisation admins.
 	RemoveGroupMembers(ctx context.Context, in *RemoveGroupMembersRequest, opts ...grpc.CallOption) (*RemoveGroupMembersResponse, error)
 	// ListGroupMembers returns a group's members, ordered by principal ID.
-	// Required Permissions:
-	//   - group.member.list on /organisation/{organisation_id}/project/{project_name}/group/{name}
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	ListGroupMembers(ctx context.Context, in *ListGroupMembersRequest, opts ...grpc.CallOption) (*ListGroupMembersResponse, error)
 	// ListGroupsForPrincipal returns the groups a principal is a member of in a project, ordered by name.
-	// Required Permissions:
-	//   - group.list on /organisation/{organisation_id}/project/{project_name}
-	//   - principal.assignment.list on /organisation/{organisation_id}/project/{project_name}/principal/{principal_id}
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	ListGroupsForPrincipal(ctx context.Context, in *ListGroupsForPrincipalRequest, opts ...grpc.CallOption) (*ListGroupsForPrincipalResponse, error)
+	// WhoAmI describes the caller: its principal ID, organisation and kind, and for an API key the project it belongs
+	// to and its access level. Use it to find out which project an API key is for before making project-scoped calls.
+	// It needs no permission: any valid credential may call it, and it only describes that credential. A user's
+	// organisation comes from their dashboard sign-in and is empty if they have not joined one yet.
+	WhoAmI(ctx context.Context, in *WhoAmIRequest, opts ...grpc.CallOption) (*WhoAmIResponse, error)
 }
 
 type permissionsServiceClient struct {
@@ -473,88 +500,133 @@ func (c *permissionsServiceClient) ListGroupsForPrincipal(ctx context.Context, i
 	return out, nil
 }
 
+func (c *permissionsServiceClient) WhoAmI(ctx context.Context, in *WhoAmIRequest, opts ...grpc.CallOption) (*WhoAmIResponse, error) {
+	out := new(WhoAmIResponse)
+	err := c.cc.Invoke(ctx, PermissionsService_WhoAmI_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PermissionsServiceServer is the server API for PermissionsService service.
 // All implementations must embed UnimplementedPermissionsServiceServer
 // for forward compatibility
 type PermissionsServiceServer interface {
-	// CreatePermission creates a new permission. It is idempotent and will update the permission if it already exists.
-	// Required Permissions:
-	//   - permission.create on /organisation/{organisation_id}
+	// CreatePermission creates a permission in a project. Permission names are unique within a project; projects share
+	// nothing, so the same name can exist in several projects.
+	//
+	// It is idempotent by name. If the project already has a permission with this name, no new permission is created:
+	// the existing one is returned. If the request has a non-empty description that differs, the description is first
+	// set to it; an empty description leaves the existing one unchanged (use UpdatePermission to clear it). Changing
+	// an existing permission this way needs the same access as UpdatePermission; returning it unchanged needs the
+	// access of GetPermission. The caller who actually creates a permission can manage that permission from then on.
+	// Access: an API key of the project with full access; in the dashboard, organisation admins.
 	CreatePermission(context.Context, *CreatePermissionRequest) (*Permission, error)
-	// GetPermission returns a permission by name.
-	// Required Permissions:
-	//   - permission.get on /organisation/{organisation_id}/permission/{name}
+	// GetPermission returns a permission by name. It returns NOT_FOUND if the project has no permission with this name.
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	GetPermission(context.Context, *GetPermissionRequest) (*Permission, error)
-	// UpdatePermission updates a permission. It will return not found if the permission does not exist.
-	// Required Permissions:
-	//   - permission.update on /organisation/{organisation_id}/permission/{name}
+	// UpdatePermission replaces a permission's description and, if new_name is set, renames it. The description is
+	// always replaced: omitting it clears it. A rename is applied to every role and grant in the project that has the
+	// permission, so nobody gains or loses access by it. It returns NOT_FOUND if the permission does not exist and
+	// ALREADY_EXISTS if new_name is already taken in the project.
+	// Access: an API key of the project with full access; in the dashboard, organisation admins and the user who
+	// created the permission.
 	UpdatePermission(context.Context, *UpdatePermissionRequest) (*Permission, error)
-	// DeletePermission deletes a permission. It is idempotent and will return ok whether the permission existed or not.
-	// Required Permissions:
-	//   - permission.delete on /organisation/{organisation_id}/permission/{name}
+	// DeletePermission deletes a permission and removes it from every role and grant in the project; a grant left with
+	// no permissions and no roles is deleted. It is idempotent: it returns OK whether the permission existed or not.
+	// Access: an API key of the project with full access; in the dashboard, organisation admins and the user who
+	// created the permission.
 	DeletePermission(context.Context, *DeletePermissionRequest) (*emptypb.Empty, error)
-	// ListPermissions returns a list of permissions.
-	// Required Permissions:
-	//   - permission.list on /organisation/{organisation_id}
+	// ListPermissions returns a page of the project's permissions, optionally filtered by name.
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	ListPermissions(context.Context, *ListPermissionsRequest) (*ListPermissionsResponse, error)
-	// CreateRole creates a new role. It is idempotent and will update the role if it already exists.
-	// Required Permissions:
-	//   - role.create on /organisation/{organisation_id}
-	//   - permission.get on /organisation/{organisation_id}/permission/{permission_name} for each permission in the role
+	// CreateRole creates a role: a named set of permissions of the same project. Role names are unique within a
+	// project. Every permission in the request must exist in the project, or INVALID_ARGUMENT is returned.
+	//
+	// It is idempotent by name. If the project already has a role with this name, no new role is created: the existing
+	// one is returned. A non-empty description that differs replaces the existing one, and a non-empty list of
+	// permissions that differs (the order does not matter) replaces the existing permissions. An empty description or
+	// an empty list of permissions leaves that field unchanged; use UpdateRole to clear it. Changing an existing role
+	// this way needs the same access as UpdateRole; returning it unchanged needs the access of GetRole. The caller who
+	// actually creates a role can manage that role from then on.
+	// Access: an API key of the project with full access; in the dashboard, organisation admins.
 	CreateRole(context.Context, *CreateRoleRequest) (*Role, error)
-	// GetRole returns a role by ID.
-	// Required Permissions:
-	//   - role.get on /organisation/{organisation_id}/role/{id}
+	// GetRole returns a role by ID. It returns NOT_FOUND if the project has no role with this ID.
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	GetRole(context.Context, *GetRoleRequest) (*Role, error)
-	// UpdateRole updates a role. It will return not found if the role does not exist.
-	// Required Permissions:
-	//   - role.update on /organisation/{organisation_id}/role/{id}
+	// UpdateRole replaces a role's name, description and permissions with the request's. Every field is replaced:
+	// omitting description clears it and omitting permissions leaves the role with no permissions. Every permission in
+	// the request must exist in the project, or INVALID_ARGUMENT is returned. It returns NOT_FOUND if the role does not
+	// exist and ALREADY_EXISTS if another role in the project has the name.
+	// Access: an API key of the project with full access; in the dashboard, organisation admins and the user who
+	// created the role.
 	UpdateRole(context.Context, *UpdateRoleRequest) (*Role, error)
-	// DeleteRole deletes a role. It is idempotent and will return ok whether the role existed or not.
-	// Required Permissions:
-	//   - role.delete on /organisation/{organisation_id}/role/{id}
+	// DeleteRole deletes a role and removes it from every grant in the project; a grant left with no permissions and no
+	// roles is deleted. It is idempotent: it returns OK whether the role existed or not.
+	// Access: an API key of the project with full access; in the dashboard, organisation admins and the user who
+	// created the role.
 	DeleteRole(context.Context, *DeleteRoleRequest) (*emptypb.Empty, error)
-	// ListRoles returns a list of roles.
-	// Required Permissions:
-	//   - role.list on /organisation/{organisation_id}
+	// ListRoles returns a page of the project's roles, with their permissions, optionally filtered by name.
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	ListRoles(context.Context, *ListRolesRequest) (*ListRolesResponse, error)
-	// GrantUserPermissionsAndRolesOnResource assigns permissions and roles to a user on a resource. It is additive and will not remove existing permissions or roles.
-	// Required Permissions:
-	//   - permission.get on /organisation/{organisation_id}/permission/{permission_name} for each permission
-	//   - role.get on /organisation/{organisation_id}/role/{role_id} for each role
-	//   - principal.assignment.create on /organisation/{organisation_id}/principal/{user_id}
+	// GrantUserPermissionsAndRolesOnResource grants permissions and roles to a principal on a resource URI. It is
+	// additive: what the principal already holds there is kept. The grant applies to the resource and every resource
+	// below it (see Check). user_id may be any principal ID, including "group:<slug>" to grant to a group (the group
+	// must exist). Every permission and role must exist in the project, or INVALID_ARGUMENT is returned. A principal
+	// that is new to the organisation counts towards its unique principals (billing).
+	// Access: an API key of the project with full access; in the dashboard, organisation admins.
 	GrantUserPermissionsAndRolesOnResource(context.Context, *GrantUserPermissionsAndRolesOnResourceRequest) (*emptypb.Empty, error)
-	// RevokeUserPermissionsAndRolesOnResource revokes permissions and roles from a user on a resource.
-	// Required Permissions:
-	//   - principal.assignment.delete on RevokeUserPermissionsAndRolesOnResourceRequest.resource_uri
+	// RevokeUserPermissionsAndRolesOnResource removes permissions and roles from a principal's grant on exactly
+	// resource_uri. It does not touch grants on other URIs: a grant on an ancestor of resource_uri (or a "_" wildcard
+	// URI that matches it) still applies, so the principal may still pass Check on resource_uri afterwards. Names that
+	// the grant does not hold, including names of permissions or roles that no longer exist, are ignored; empty lists
+	// change nothing. A grant left with no permissions and no roles is deleted, and a principal left with no grant or
+	// group membership in the organisation stops counting towards its unique principals.
+	// Access: an API key of the project with full access; in the dashboard, organisation admins.
 	RevokeUserPermissionsAndRolesOnResource(context.Context, *RevokeUserPermissionsAndRolesOnResourceRequest) (*emptypb.Empty, error)
-	// GetUserPermissionsAndRolesOnResource returns the permissions and roles assigned to a user on a resource.
-	// Required Permissions:
-	//   - principal.assignment.get on GetUserPermissionsAndRolesOnResourceRequest.resource_uri
+	// GetUserPermissionsAndRolesOnResource returns the permissions and roles granted to a principal on exactly
+	// resource_uri. Grants on ancestors or "_" wildcard URIs, and grants through groups, are not included: use Check or
+	// ListPrincipalsWithAccess for effective access. user_id may be any principal ID, including "group:<slug>".
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	GetUserPermissionsAndRolesOnResource(context.Context, *GetUserPermissionsAndRolesOnResourceRequest) (*GetUserPermissionsAndRolesOnResourceResponse, error)
-	// ListPrincipals returns a list of principals.
-	// Required Permissions:
-	//   - principal.list on /organisation/{organisation_id}
+	// ListPrincipals returns a page of the principal IDs that hold at least one grant in the project, ordered by ID.
+	// Groups that hold grants are listed as "group:<slug>"; members who only hold access through a group are not.
+	// search filters by principal ID (a case-insensitive substring match): principals have no names.
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	ListPrincipals(context.Context, *ListPrincipalsRequest) (*ListPrincipalsResponse, error)
-	// GetAllAssignmentsForPrincipal returns all assignments for a principal within an organisation.
-	// Required Permissions:
-	//   - principal.assignment.list on /organisation/{organisation_id}/principal/{principal_id}
+	// GetAllAssignmentsForPrincipal returns a page of a principal's grants in the project: one assignment per resource
+	// URI, with the permissions and roles granted there. Grants through groups are not included.
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	GetAllAssignmentsForPrincipal(context.Context, *GetAllAssignmentsForPrincipalRequest) (*GetAllAssignmentsForPrincipalResponse, error)
-	// Check checks if a principal has the specified permissions on the specified resources
+	// Check checks whether a principal holds every one of the given permissions on every one of the given resources.
+	// A denial is not an error: the call succeeds with passed=false, and missing_permissions lists, per resource, the
+	// permissions the principal lacks. An error means the check could not be made (invalid request, caller not
+	// authorised, service unavailable); never treat an error as allowed.
+	//
+	// How grants apply:
+	//   - A grant on a resource URI applies to that resource and every resource below it: a grant on /docs applies to
+	//     /docs, /docs/1 and /docs/1/comments, but not to /docs-archive or /.
+	//   - A "_" segment in a granted URI matches exactly one segment: a grant on /docs/_/comments applies to
+	//     /docs/1/comments and /docs/2/comments/9, but not to /docs/1 or /docs/1/x/comments. In the URIs being checked
+	//     "_" is an ordinary segment, which only grants on "_" match.
+	//   - Grants to a group ("group:<slug>") apply to its members. A permission counts directly or through a role, and
+	//     only while it exists in the project.
+	//
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and
+	// admins. The caller must be allowed to check both the resources and the principal.
 	Check(context.Context, *CheckPermissionRequest) (*CheckPermissionResponse, error)
-	// GetTotalRolesAndPermissionsForOrganisation returns the total number of roles and permissions for an organisation.
-	// Required Permissions:
-	//   - organisation.roles.and.permissions.total on /organisation/{organisation_id}
+	// GetTotalRolesAndPermissionsForOrganisation returns the number of roles and permissions across all projects of an
+	// organisation.
+	// Access: dashboard users of the organisation (members and admins). API keys cannot call it.
 	GetTotalRolesAndPermissionsForOrganisation(context.Context, *GetTotalRolesAndPermissionsForOrganisationRequest) (*GetTotalRolesAndPermissionsForOrganisationResponse, error)
 	// BatchCheck checks whether a principal has the specified permissions on each of the specified resources and
 	// returns one result per resource, in request order. It evaluates exactly like Check (same resource URI inheritance,
 	// stored "_" wildcard and group rules, same fail-closed behaviour); a resource's result is allowed only if the
-	// principal has every requested permission on it.
-	// Required Permissions (the same as Check):
-	//   - permission.check on /organisation/{organisation_id}/project/{project_name}{resource_uri} for each resource
-	//   - permission.check on /organisation/{organisation_id}/project/{project_name}/principal/{principal_id}
+	// principal has every requested permission on it. A denial is a result with allowed=false, not an error.
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	BatchCheck(context.Context, *BatchCheckRequest) (*BatchCheckResponse, error)
-	// ListAccess answers "where can this principal do this permission under under_uri?". It returns the scopes in which
+	// ListAccess answers "where, at or below under_uri, does this principal hold this permission?". It returns the scopes in which
 	// Check(principal_id, permission) passes for resources at or below under_uri, counting grants made to the principal
 	// directly, through roles, and through the groups the principal is a member of.
 	//   - If the principal holds the permission on under_uri itself (through a grant on under_uri, an ancestor, or a
@@ -564,9 +636,7 @@ type PermissionsServiceServer interface {
 	//     concrete URI (grants apply to the URI and everything below it) and PATTERN for a URI with "_" wildcard
 	//     segments. Scopes are ordered by uri and paginated.
 	//
-	// Required Permissions:
-	//   - permission.check on /organisation/{organisation_id}/project/{project_name}{under_uri}
-	//   - principal.assignment.get on /organisation/{organisation_id}/project/{project_name}/principal/{principal_id}
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	ListAccess(context.Context, *ListAccessRequest) (*ListAccessResponse, error)
 	// ListPrincipalsWithAccess answers "who has access to resource_uri?". It lists the principals holding a grant on
 	// resource_uri, on an ancestor of it, or on a stored "_" wildcard URI that matches it; when permission is set, only
@@ -574,56 +644,48 @@ type PermissionsServiceServer interface {
 	// permission) passes through its own grants. Groups are listed as principals (is_group); with expand_groups their
 	// members are listed too, once per group, with via_group set. Entries are ordered by principal_id, then via_group,
 	// and paginated.
-	// Required Permissions:
-	//   - principal.list on /organisation/{organisation_id}/project/{project_name}
-	//   - principal.assignment.list on /organisation/{organisation_id}/project/{project_name}
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	ListPrincipalsWithAccess(context.Context, *ListPrincipalsWithAccessRequest) (*ListPrincipalsWithAccessResponse, error)
 	// CreateGroup creates a group in a project. A group is a set of principals: grant permissions and roles to it with
 	// GrantUserPermissionsAndRolesOnResource using the principal ID "group:{name}" and every member holds them. Groups
 	// cannot contain groups. It returns ALREADY_EXISTS if the project already has a group with this name.
-	// Required Permissions:
-	//   - group.create on /organisation/{organisation_id}/project/{project_name}
+	// Access: an API key of the project with full access; in the dashboard, organisation admins.
 	CreateGroup(context.Context, *CreateGroupRequest) (*Group, error)
-	// GetGroup returns a group by name.
-	// Required Permissions:
-	//   - group.get on /organisation/{organisation_id}/project/{project_name}/group/{name}
+	// GetGroup returns a group by name. It returns NOT_FOUND if the project has no group with this name.
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	GetGroup(context.Context, *GetGroupRequest) (*Group, error)
 	// UpdateGroup updates a group's description. A group's name cannot be changed, because "group:{name}" is the
 	// principal ID its grants are stored under. It returns NOT_FOUND if the group does not exist.
-	// Required Permissions:
-	//   - group.update on /organisation/{organisation_id}/project/{project_name}/group/{name}
+	// Access: an API key of the project with full access; in the dashboard, organisation admins.
 	UpdateGroup(context.Context, *UpdateGroupRequest) (*Group, error)
 	// DeleteGroup deletes a group together with its memberships and every grant made to it, in one transaction. It is
 	// idempotent and returns ok whether the group existed or not.
-	// Required Permissions:
-	//   - group.delete on /organisation/{organisation_id}/project/{project_name}/group/{name}
-	//   - principal.assignment.delete on /organisation/{organisation_id}/project/{project_name}
+	// Access: an API key of the project with full access; in the dashboard, organisation admins.
 	DeleteGroup(context.Context, *DeleteGroupRequest) (*emptypb.Empty, error)
 	// ListGroups returns the groups in a project, ordered by name.
-	// Required Permissions:
-	//   - group.list on /organisation/{organisation_id}/project/{project_name}
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	ListGroups(context.Context, *ListGroupsRequest) (*ListGroupsResponse, error)
 	// AddGroupMembers adds up to 100 principals to a group. Principals that are already members are reported, not
 	// re-added. Principal IDs starting with "group:" are rejected (groups cannot be nested). A principal that is new to
-	// the organisation counts towards its unique principals, exactly as if it had been granted something.
-	// Required Permissions:
-	//   - group.member.add on /organisation/{organisation_id}/project/{project_name}/group/{name}
-	//   - principal.assignment.create on /organisation/{organisation_id}/project/{project_name}
+	// the organisation counts towards its unique principals, exactly as if it had been granted something. Because a
+	// member holds every grant of the group, the caller must also be allowed to grant in the whole project.
+	// Access: an API key of the project with full access; in the dashboard, organisation admins.
 	AddGroupMembers(context.Context, *AddGroupMembersRequest) (*AddGroupMembersResponse, error)
-	// RemoveGroupMembers removes up to 100 principals from a group. Principals that are not members are reported.
-	// Required Permissions:
-	//   - group.member.remove on /organisation/{organisation_id}/project/{project_name}/group/{name}
-	//   - principal.assignment.create on /organisation/{organisation_id}/project/{project_name}
+	// RemoveGroupMembers removes up to 100 principals from a group. Principals that are not members are reported. Because
+	// a removed member loses every grant of the group, the caller must also be allowed to revoke in the whole project.
+	// Access: an API key of the project with full access; in the dashboard, organisation admins.
 	RemoveGroupMembers(context.Context, *RemoveGroupMembersRequest) (*RemoveGroupMembersResponse, error)
 	// ListGroupMembers returns a group's members, ordered by principal ID.
-	// Required Permissions:
-	//   - group.member.list on /organisation/{organisation_id}/project/{project_name}/group/{name}
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	ListGroupMembers(context.Context, *ListGroupMembersRequest) (*ListGroupMembersResponse, error)
 	// ListGroupsForPrincipal returns the groups a principal is a member of in a project, ordered by name.
-	// Required Permissions:
-	//   - group.list on /organisation/{organisation_id}/project/{project_name}
-	//   - principal.assignment.list on /organisation/{organisation_id}/project/{project_name}/principal/{principal_id}
+	// Access: any API key of the project (check-only or full access); in the dashboard, organisation members and admins.
 	ListGroupsForPrincipal(context.Context, *ListGroupsForPrincipalRequest) (*ListGroupsForPrincipalResponse, error)
+	// WhoAmI describes the caller: its principal ID, organisation and kind, and for an API key the project it belongs
+	// to and its access level. Use it to find out which project an API key is for before making project-scoped calls.
+	// It needs no permission: any valid credential may call it, and it only describes that credential. A user's
+	// organisation comes from their dashboard sign-in and is empty if they have not joined one yet.
+	WhoAmI(context.Context, *WhoAmIRequest) (*WhoAmIResponse, error)
 	mustEmbedUnimplementedPermissionsServiceServer()
 }
 
@@ -717,6 +779,9 @@ func (UnimplementedPermissionsServiceServer) ListGroupMembers(context.Context, *
 }
 func (UnimplementedPermissionsServiceServer) ListGroupsForPrincipal(context.Context, *ListGroupsForPrincipalRequest) (*ListGroupsForPrincipalResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListGroupsForPrincipal not implemented")
+}
+func (UnimplementedPermissionsServiceServer) WhoAmI(context.Context, *WhoAmIRequest) (*WhoAmIResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method WhoAmI not implemented")
 }
 func (UnimplementedPermissionsServiceServer) mustEmbedUnimplementedPermissionsServiceServer() {}
 
@@ -1253,6 +1318,24 @@ func _PermissionsService_ListGroupsForPrincipal_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PermissionsService_WhoAmI_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WhoAmIRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PermissionsServiceServer).WhoAmI(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PermissionsService_WhoAmI_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PermissionsServiceServer).WhoAmI(ctx, req.(*WhoAmIRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PermissionsService_ServiceDesc is the grpc.ServiceDesc for PermissionsService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1375,6 +1458,10 @@ var PermissionsService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListGroupsForPrincipal",
 			Handler:    _PermissionsService_ListGroupsForPrincipal_Handler,
+		},
+		{
+			MethodName: "WhoAmI",
+			Handler:    _PermissionsService_WhoAmI_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

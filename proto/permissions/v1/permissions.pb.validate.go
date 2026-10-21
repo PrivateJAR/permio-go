@@ -863,7 +863,7 @@ func (m *CheckPermissionRequest) validate(all bool) error {
 		if !_CheckPermissionRequest_ResourceUris_Pattern.MatchString(item) {
 			err := CheckPermissionRequestValidationError{
 				field:  fmt.Sprintf("ResourceUris[%v]", idx),
-				reason: "value does not match regex pattern \"^(/([^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+/)*[^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+)?$\"",
+				reason: "value does not match regex pattern \"^/([^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+/)*[^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+$\"",
 			}
 			if !all {
 				return err
@@ -997,7 +997,7 @@ var _ interface {
 
 var _CheckPermissionRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
 
-var _CheckPermissionRequest_ResourceUris_Pattern = regexp.MustCompile("^(/([^/()\\[\\]{}*+?|^$\\\\]+/)*[^/()\\[\\]{}*+?|^$\\\\]+)?$")
+var _CheckPermissionRequest_ResourceUris_Pattern = regexp.MustCompile("^/([^/()\\[\\]{}*+?|^$\\\\]+/)*[^/()\\[\\]{}*+?|^$\\\\]+$")
 
 // Validate checks the field values on MissingPermissions with the rules
 // defined in the proto definition for this message. If any rules are
@@ -2606,7 +2606,7 @@ func (m *GrantUserPermissionsAndRolesOnResourceRequest) validate(all bool) error
 	if !_GrantUserPermissionsAndRolesOnResourceRequest_ResourceUri_Pattern.MatchString(m.GetResourceUri()) {
 		err := GrantUserPermissionsAndRolesOnResourceRequestValidationError{
 			field:  "ResourceUri",
-			reason: "value does not match regex pattern \"^(/([^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+/)*[^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+)?$\"",
+			reason: "value does not match regex pattern \"^/([^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+/)*[^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+$\"",
 		}
 		if !all {
 			return err
@@ -2744,7 +2744,7 @@ var _ interface {
 
 var _GrantUserPermissionsAndRolesOnResourceRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
 
-var _GrantUserPermissionsAndRolesOnResourceRequest_ResourceUri_Pattern = regexp.MustCompile("^(/([^/()\\[\\]{}*+?|^$\\\\]+/)*[^/()\\[\\]{}*+?|^$\\\\]+)?$")
+var _GrantUserPermissionsAndRolesOnResourceRequest_ResourceUri_Pattern = regexp.MustCompile("^/([^/()\\[\\]{}*+?|^$\\\\]+/)*[^/()\\[\\]{}*+?|^$\\\\]+$")
 
 var _GrantUserPermissionsAndRolesOnResourceRequest_Roles_Pattern = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
 
@@ -5073,7 +5073,7 @@ func (m *BatchCheckRequest) validate(all bool) error {
 		if !_BatchCheckRequest_ResourceUris_Pattern.MatchString(item) {
 			err := BatchCheckRequestValidationError{
 				field:  fmt.Sprintf("ResourceUris[%v]", idx),
-				reason: "value does not match regex pattern \"^(/([^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+/)*[^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+)?$\"",
+				reason: "value does not match regex pattern \"^/([^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+/)*[^/()\\\\[\\\\]{}*+?|^$\\\\\\\\]+$\"",
 			}
 			if !all {
 				return err
@@ -5207,7 +5207,7 @@ var _ interface {
 
 var _BatchCheckRequest_ProjectName_Pattern = regexp.MustCompile("^[a-z0-9-]+$")
 
-var _BatchCheckRequest_ResourceUris_Pattern = regexp.MustCompile("^(/([^/()\\[\\]{}*+?|^$\\\\]+/)*[^/()\\[\\]{}*+?|^$\\\\]+)?$")
+var _BatchCheckRequest_ResourceUris_Pattern = regexp.MustCompile("^/([^/()\\[\\]{}*+?|^$\\\\]+/)*[^/()\\[\\]{}*+?|^$\\\\]+$")
 
 // Validate checks the field values on BatchCheckResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -9410,3 +9410,215 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ListGroupsForPrincipalResponseValidationError{}
+
+// Validate checks the field values on WhoAmIRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *WhoAmIRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on WhoAmIRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in WhoAmIRequestMultiError, or
+// nil if none found.
+func (m *WhoAmIRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *WhoAmIRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return WhoAmIRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// WhoAmIRequestMultiError is an error wrapping multiple validation errors
+// returned by WhoAmIRequest.ValidateAll() if the designated constraints
+// aren't met.
+type WhoAmIRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m WhoAmIRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m WhoAmIRequestMultiError) AllErrors() []error { return m }
+
+// WhoAmIRequestValidationError is the validation error returned by
+// WhoAmIRequest.Validate if the designated constraints aren't met.
+type WhoAmIRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e WhoAmIRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e WhoAmIRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e WhoAmIRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e WhoAmIRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e WhoAmIRequestValidationError) ErrorName() string { return "WhoAmIRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e WhoAmIRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sWhoAmIRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = WhoAmIRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = WhoAmIRequestValidationError{}
+
+// Validate checks the field values on WhoAmIResponse with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *WhoAmIResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on WhoAmIResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in WhoAmIResponseMultiError,
+// or nil if none found.
+func (m *WhoAmIResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *WhoAmIResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for PrincipalId
+
+	// no validation rules for OrganisationId
+
+	// no validation rules for PrincipalType
+
+	// no validation rules for ProjectName
+
+	// no validation rules for ApiKeyAccess
+
+	// no validation rules for Email
+
+	if len(errors) > 0 {
+		return WhoAmIResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// WhoAmIResponseMultiError is an error wrapping multiple validation errors
+// returned by WhoAmIResponse.ValidateAll() if the designated constraints
+// aren't met.
+type WhoAmIResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m WhoAmIResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m WhoAmIResponseMultiError) AllErrors() []error { return m }
+
+// WhoAmIResponseValidationError is the validation error returned by
+// WhoAmIResponse.Validate if the designated constraints aren't met.
+type WhoAmIResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e WhoAmIResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e WhoAmIResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e WhoAmIResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e WhoAmIResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e WhoAmIResponseValidationError) ErrorName() string { return "WhoAmIResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e WhoAmIResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sWhoAmIResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = WhoAmIResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = WhoAmIResponseValidationError{}
