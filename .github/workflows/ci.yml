@@ -16,9 +16,11 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: useblacksmith/checkout@v1
+      # Latest Go: current staticcheck releases need it. The test job covers
+      # the minimum version in go.mod.
       - uses: actions/setup-go@v6
         with:
-          go-version-file: go.mod
+          go-version: stable
           cache: true
           cache-dependency-path: go.sum
       - name: gofmt
