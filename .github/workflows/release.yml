@@ -1,0 +1,36 @@
+name: Release
+
+# Go modules are not uploaded anywhere: the Go module proxy fetches a version
+# from this repository the first time someone requests its tag. This workflow
+# checks a pushed v* tag and then asks proxy.golang.org for it, so the version
+# is cached (and listed on pkg.go.dev) straight away.
+#
+# Tags are currently created by PrivateJAR/proto's release workflow.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    steps:
+      - uses: useblacksmith/checkout@v1
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: go.sum
+      - run: go vet ./...
+      - run: go test -race ./...
+      - name: Publish to the Go module proxy
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/fetch" && cd "$RUNNER_TEMP/fetch"
+          go mod init fetch
+          GOPROXY=https://proxy.golang.org GOFLAGS=-mod=mod go get "github.com/${GITHUB_REPOSITORY}@${TAG}"
+          curl -fsS "https://proxy.golang.org/github.com/$(echo "$GITHUB_REPOSITORY" | sed 's/[A-Z]/!\L&/g')/@v/${TAG}.info"
