@@ -7,7 +7,7 @@ This repository is generated from `PrivateJAR/proto` on every release. Do not ed
 ## Installation
 
 ```bash
-go get github.com/PrivateJAR/permio-go@v0.0.17
+go get github.com/PrivateJAR/permio-go@v0.0.18
 ```
 
 ## Packages
@@ -60,4 +60,4 @@ func main() {
 
 ## Version
 
-v0.0.17
+v0.0.18

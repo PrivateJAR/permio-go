@@ -70,6 +70,8 @@ func (m *GetTotalRolesAndPermissionsForOrganisationRequest) validate(all bool) e
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Project
+
 	if len(errors) > 0 {
 		return GetTotalRolesAndPermissionsForOrganisationRequestMultiError(errors)
 	}
@@ -187,6 +189,8 @@ func (m *GetTotalRolesAndPermissionsForOrganisationResponse) validate(all bool) 
 	// no validation rules for TotalRoles
 
 	// no validation rules for TotalPermissions
+
+	// no validation rules for TotalPrincipals
 
 	if len(errors) > 0 {
 		return GetTotalRolesAndPermissionsForOrganisationResponseMultiError(errors)
