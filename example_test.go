@@ -18,7 +18,7 @@ func Example() {
 	}
 	defer client.Close()
 
-	ok, err := client.Check(context.Background(), "user-123", "docs.read", permio.Resource("docs", "42"))
+	ok, err := client.Check(context.Background(), "user-123", "docs.read", permio.MustResource("docs", "42"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,7 +32,7 @@ func ExampleClient_Grant() {
 	// Grant to a group: every member holds the grant.
 	err := client.Grant(ctx, permio.GrantRequest{
 		Principal:   permio.GroupPrincipal("editors"),
-		Resource:    permio.Resource("docs"),
+		Resource:    permio.MustResource("docs"),
 		Permissions: []string{"docs.read", "docs.write"},
 	})
 	if errors.Is(err, permio.ErrPermission) {

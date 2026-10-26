@@ -14,20 +14,36 @@ const MaxResourceURILength = 2048
 // so that IDs containing "/", spaces or other reserved characters stay a
 // single segment:
 //
-//	permio.Resource("projects", projectID, "docs", "a/b") // "/projects/p1/docs/a%2Fb"
+//	uri, err := permio.Resource("projects", projectID, "docs", "a/b") // "/projects/p1/docs/a%2Fb"
 //
 // Build URIs the same way when granting and when checking, or they will not
-// match. An empty segment yields a URI that every call rejects.
-func Resource(segments ...string) string {
+// match. It fails with [KindValidation] when given no segments (rather than
+// returning "/", which would cover every resource in a grant), an empty
+// segment, or segments that make the URI too long.
+func Resource(segments ...string) (string, error) {
+	if len(segments) == 0 {
+		return "", invalid("permio.Resource needs at least one segment")
+	}
 	var b strings.Builder
 	for _, s := range segments {
 		b.WriteByte('/')
 		b.WriteString(EncodeSegment(s))
 	}
-	if b.Len() == 0 {
-		return "/"
+	uri := b.String()
+	if err := ValidateResourceURI(uri); err != nil {
+		return "", err
 	}
-	return b.String()
+	return uri, nil
+}
+
+// MustResource is like [Resource] but panics if the URI is invalid. Use it for
+// segments known to be non-empty, such as literals.
+func MustResource(segments ...string) string {
+	uri, err := Resource(segments...)
+	if err != nil {
+		panic(err)
+	}
+	return uri
 }
 
 // EncodeSegment percent-encodes one resource URI segment. Only A-Z, a-z, 0-9

@@ -195,9 +195,10 @@ func (c *Client) GetPermission(ctx context.Context, name string) (*Permission, e
 	return &p, nil
 }
 
-// CreatePermission creates a permission. Creating one that already exists
-// with the same description succeeds; with another description it fails with
-// [KindAlreadyExists].
+// CreatePermission creates a permission, or returns the existing one: create
+// is idempotent. If the permission already exists, a non-empty description
+// that differs replaces the stored one (which needs permission.update on it);
+// an empty description leaves it as it is.
 func (c *Client) CreatePermission(ctx context.Context, name, description string) (*Permission, error) {
 	project, err := c.projectName()
 	if err != nil {
@@ -205,13 +206,6 @@ func (c *Client) CreatePermission(ctx context.Context, name, description string)
 	}
 	res, err := c.permissions.CreatePermission(ctx, &pb.CreatePermissionRequest{ProjectName: project, Name: name, Description: description})
 	if err != nil {
-		// The API answers a clash with an existing permission (same name, other
-		// description) with a bare Internal "failed to create permission".
-		if isInternal(err) {
-			if p, gerr := c.GetPermission(ctx, name); gerr == nil {
-				return nil, alreadyExists("permission %q already exists with description %q; update it instead", name, p.Description)
-			}
-		}
 		return nil, err
 	}
 	p := permissionFromPB(res)
@@ -219,7 +213,8 @@ func (c *Client) CreatePermission(ctx context.Context, name, description string)
 }
 
 // UpdatePermission replaces a permission's description and, when newName is
-// not empty, renames it.
+// not empty, renames it. Renaming to a name already in use fails with
+// [KindAlreadyExists].
 func (c *Client) UpdatePermission(ctx context.Context, name, newName, description string) (*Permission, error) {
 	project, err := c.projectName()
 	if err != nil {
@@ -241,13 +236,6 @@ func (c *Client) DeletePermission(ctx context.Context, name string) error {
 		return err
 	}
 	_, err = c.permissions.DeletePermission(ctx, &pb.DeletePermissionRequest{ProjectName: project, Name: name})
-	// The API answers a delete of a missing permission with a bare Internal
-	// "failed to delete permission"; treat it as done if the permission is gone.
-	if err != nil && isInternal(err) {
-		if _, gerr := c.GetPermission(ctx, name); IsNotFound(gerr) {
-			return nil
-		}
-	}
 	return err
 }
 
@@ -265,7 +253,10 @@ func (c *Client) GetRole(ctx context.Context, id string) (*Role, error) {
 	return &r, nil
 }
 
-// CreateRole creates a role and returns it with its ID.
+// CreateRole creates a role and returns it with its ID, or returns the
+// existing role with this name: create is idempotent. If the role already
+// exists, a non-empty description or permission list that differs replaces
+// the stored one (which needs role.update on it); empty ones leave it as it is.
 func (c *Client) CreateRole(ctx context.Context, name, description string, permissions []string) (*Role, error) {
 	project, err := c.projectName()
 	if err != nil {
@@ -273,25 +264,14 @@ func (c *Client) CreateRole(ctx context.Context, name, description string, permi
 	}
 	res, err := c.permissions.CreateRole(ctx, &pb.CreateRoleRequest{ProjectName: project, Name: name, Description: description, Permissions: uniq(permissions)})
 	if err != nil {
-		// The API answers a clash with an existing role of the same name (but
-		// other permissions or description) with a bare Internal error.
-		if isInternal(err) {
-			for r, lerr := range c.ListRoles(ctx, &ListOptions{Search: name}) {
-				if lerr != nil {
-					break
-				}
-				if r.Name == name {
-					return nil, alreadyExists("role %q already exists (ID %s) with other permissions or description; update it instead", name, r.ID)
-				}
-			}
-		}
 		return nil, err
 	}
 	r := roleFromPB(res)
 	return &r, nil
 }
 
-// UpdateRole replaces a role's name, description and permissions.
+// UpdateRole replaces a role's name, description and permissions. Renaming
+// to a name another role uses fails with [KindAlreadyExists].
 func (c *Client) UpdateRole(ctx context.Context, id, name, description string, permissions []string) (*Role, error) {
 	project, err := c.projectName()
 	if err != nil {

@@ -5,7 +5,8 @@ name: Release
 # checks a pushed v* tag and then asks proxy.golang.org for it, so the version
 # is cached (and listed on pkg.go.dev) straight away.
 #
-# Tags are currently created by PrivateJAR/proto's release workflow.
+# Tags are pushed by hand by a maintainer (git tag vX.Y.Z && git push origin vX.Y.Z)
+# after the release commit is on main; nothing creates them automatically.
 
 on:
   push:

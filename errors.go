@@ -82,8 +82,9 @@ type MissingPermission struct {
 type Error struct {
 	// Kind classifies the error.
 	Kind Kind
-	// Code is the gRPC status code; codes.OK for errors raised by the SDK itself
-	// (config, denied) and InvalidArgument for its own input checks.
+	// Code is the gRPC status code. Errors raised by the SDK itself use
+	// FailedPrecondition (config), PermissionDenied (denied) and
+	// InvalidArgument (its own input checks). It is never codes.OK.
 	Code codes.Code
 	// Message is the server's (or SDK's) message.
 	Message string
@@ -119,12 +120,19 @@ func (e *Error) Is(target error) bool {
 	return ok && k == e.Kind
 }
 
-// GRPCStatus lets status.FromError and status.Code read the gRPC code.
+// GRPCStatus lets status.FromError and status.Code read the gRPC code. The
+// code is never codes.OK: an *Error is always a failure.
 func (e *Error) GRPCStatus() *status.Status {
-	if st, ok := status.FromError(e.cause); ok && e.cause != nil {
-		return st
+	if e.cause != nil {
+		if st, ok := status.FromError(e.cause); ok && st.Code() != codes.OK {
+			return st
+		}
 	}
-	return status.New(e.Code, e.Message)
+	code := e.Code
+	if code == codes.OK {
+		code = codes.Unknown
+	}
+	return status.New(code, e.Message)
 }
 
 // KindOf returns the Kind of err, or "" if it is not an *Error.
@@ -227,15 +235,11 @@ func serverRetryDelay(st *status.Status, md metadata.MD) (time.Duration, bool) {
 }
 
 func configError(format string, args ...any) error {
-	return &Error{Kind: KindConfig, Message: fmt.Sprintf(format, args...)}
+	return &Error{Kind: KindConfig, Code: codes.FailedPrecondition, Message: fmt.Sprintf(format, args...)}
 }
 
 func invalid(format string, args ...any) error {
 	return &Error{Kind: KindValidation, Code: codes.InvalidArgument, Message: fmt.Sprintf(format, args...)}
-}
-
-func alreadyExists(format string, args ...any) error {
-	return &Error{Kind: KindAlreadyExists, Code: codes.AlreadyExists, Message: fmt.Sprintf(format, args...)}
 }
 
 func inconsistent(format string, args ...any) error {
@@ -251,16 +255,6 @@ func deniedError(principal string, missing []MissingPermission) error {
 	if summary == "" {
 		summary = "the requested permissions"
 	}
-	return &Error{Kind: KindDenied, Principal: principal, Missing: missing,
+	return &Error{Kind: KindDenied, Code: codes.PermissionDenied, Principal: principal, Missing: missing,
 		Message: fmt.Sprintf("principal %q is missing %s", principal, summary)}
-}
-
-// isInternal reports whether err is a gRPC Internal error, which the API uses
-// for failures it does not classify (e.g. unique-index clashes).
-func isInternal(err error) bool {
-	var pe *Error
-	if errors.As(err, &pe) {
-		return pe.Code == codes.Internal
-	}
-	return status.Code(err) == codes.Internal
 }

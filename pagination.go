@@ -12,7 +12,8 @@ import (
 const MaxPageSize = 100
 
 // MaxBatch is the most resources or permissions one Check or BatchCheck call
-// accepts, and the most principals per group membership call.
+// accepts, and the most principals [Groups.AddMembers] and
+// [Groups.RemoveMembers] accept.
 const MaxBatch = 100
 
 // ListOptions configures a paginated listing.
@@ -38,8 +39,9 @@ func (o *ListOptions) pageSize() int32 {
 }
 
 // paginate iterates every item of a list RPC, following next_cursor until the
-// API returns an empty (or repeated) one. A failing page yields the error once
-// and ends the iteration.
+// API returns an empty one. A failing page yields the error once and ends the
+// iteration. A cursor the API already returned would loop forever, so it
+// yields an error rather than ending quietly with a partial listing.
 func paginate[T any](ctx context.Context, pageSize int32, fetch func(ctx context.Context, p *paginationv1.PaginationRequest) ([]T, string, error)) iter.Seq2[T, error] {
 	return func(yield func(T, error) bool) {
 		var zero T
@@ -60,7 +62,11 @@ func paginate[T any](ctx context.Context, pageSize int32, fetch func(ctx context
 					return
 				}
 			}
-			if next == "" || seen[next] {
+			if next == "" {
+				return
+			}
+			if seen[next] {
+				yield(zero, inconsistent("the pagination cursor %q was returned twice; the listing is incomplete", next))
 				return
 			}
 			seen[next] = true

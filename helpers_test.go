@@ -41,6 +41,8 @@ type fakeServer struct {
 	getAllAssignments func(context.Context, *pb.GetAllAssignmentsForPrincipalRequest) (*pb.GetAllAssignmentsForPrincipalResponse, error)
 	createPermission  func(context.Context, *pb.CreatePermissionRequest) (*pb.Permission, error)
 	getPermission     func(context.Context, *pb.GetPermissionRequest) (*pb.Permission, error)
+	deletePermission  func(context.Context, *pb.DeletePermissionRequest) (*emptypb.Empty, error)
+	removeMembers     func(context.Context, *pb.RemoveGroupMembersRequest) (*pb.RemoveGroupMembersResponse, error)
 }
 
 func (s *fakeServer) count(method string) int {
@@ -90,6 +92,12 @@ func (s *fakeServer) CreatePermission(ctx context.Context, r *pb.CreatePermissio
 }
 func (s *fakeServer) GetPermission(ctx context.Context, r *pb.GetPermissionRequest) (*pb.Permission, error) {
 	return s.getPermission(ctx, r)
+}
+func (s *fakeServer) DeletePermission(ctx context.Context, r *pb.DeletePermissionRequest) (*emptypb.Empty, error) {
+	return s.deletePermission(ctx, r)
+}
+func (s *fakeServer) RemoveGroupMembers(ctx context.Context, r *pb.RemoveGroupMembersRequest) (*pb.RemoveGroupMembersResponse, error) {
+	return s.removeMembers(ctx, r)
 }
 
 // start serves s over bufconn and returns a client for it. Retry delays are
