@@ -7,7 +7,9 @@
 //	client, err := permio.New(permio.Options{APIKey: os.Getenv("PERMIO_API_KEY"), Project: "my-app"})
 //	if err != nil { ... }
 //	defer client.Close()
-//	ok, err := client.Check(ctx, userID, "docs.read", permio.Resource("docs", docID))
+//	resource, err := permio.Resource("docs", docID)
+//	if err != nil { ... }
+//	ok, err := client.Check(ctx, userID, "docs.read", resource)
 //
 // The generated clients stay reachable through [Client.Permissions] and
 // [Client.Organisations], with the same auth, timeouts, retries and errors.
@@ -46,10 +48,13 @@ type Options struct {
 	// empty, the PERMIO_API_KEY environment variable is used.
 	APIKey string
 	// Endpoint is the API's "host:port" ([DefaultEndpoint] when empty), or a
-	// URL such as "https://dev-api.perms.io". "http://" URLs dial without TLS.
+	// URL such as "https://dev-api.perms.io". "http://" URLs dial without TLS,
+	// which is only allowed to a local host (see Insecure).
 	// Ignored when Conn is set.
 	Endpoint string
-	// Insecure dials without TLS. Only for local servers.
+	// Insecure dials without TLS. Only for local servers: the API key would be
+	// sent in clear, so New fails with [KindConfig] unless the endpoint's host
+	// is a loopback address, "localhost" or a name ending in ".localhost".
 	Insecure bool
 	// Project is the default project_name. Use [Client.WithProject] for others.
 	Project string
@@ -111,6 +116,9 @@ func New(opts Options) (*Client, error) {
 		}
 		creds := credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS12})
 		if opts.Insecure || !tlsOn {
+			if !isLocalTarget(target) {
+				return nil, configError("refusing to dial %q without TLS: the API key would be sent in clear; plaintext is only allowed to localhost, *.localhost or a loopback address", target)
+			}
 			creds = insecure.NewCredentials()
 		}
 		dial := []grpc.DialOption{grpc.WithTransportCredentials(creds), grpc.WithDisableServiceConfig()}
@@ -159,6 +167,21 @@ func parseEndpoint(endpoint string) (target string, tlsOn bool, err error) {
 		endpoint = net.JoinHostPort(strings.Trim(endpoint, "[]"), port)
 	}
 	return endpoint, tlsOn, nil
+}
+
+// isLocalTarget reports whether a "host:port" dial target is this machine:
+// a loopback IP, "localhost" or a name ending in ".localhost".
+func isLocalTarget(target string) bool {
+	host, _, err := net.SplitHostPort(target)
+	if err != nil {
+		host = target
+	}
+	host = strings.TrimSuffix(strings.ToLower(strings.Trim(host, "[]")), ".")
+	if host == "localhost" || strings.HasSuffix(host, ".localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 // Close releases the connection the client dialled. Clients made with

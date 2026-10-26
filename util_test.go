@@ -3,6 +3,7 @@ package permio
 import (
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -66,14 +67,55 @@ func TestParseEndpoint(t *testing.T) {
 	}
 }
 
-func TestResource(t *testing.T) {
-	if got := Resource("projects", "p1", "docs", "a/b c"); got != "/projects/p1/docs/a%2Fb%20c" {
-		t.Fatal(got)
+func TestPlaintextOnlyToLocalHosts(t *testing.T) {
+	for _, ep := range []string{"http://localhost:8080", "http://127.0.0.1:9000", "http://[::1]:9000", "http://api.localhost", "http://app.localhost.:80"} {
+		c, err := New(Options{APIKey: testKey, Endpoint: ep})
+		if err != nil {
+			t.Errorf("%s: %v", ep, err)
+			continue
+		}
+		_ = c.Close()
 	}
+	for _, opts := range []Options{
+		{Endpoint: "http://dev-api.perms.io"},
+		{Endpoint: "http://10.0.0.5:8080"},
+		{Endpoint: "http://localhost.example.com"},
+		{Endpoint: "dev-api.perms.io:443", Insecure: true},
+		{Insecure: true}, // the default (production) endpoint
+	} {
+		opts.APIKey = testKey
+		if _, err := New(opts); !errors.Is(err, ErrConfig) {
+			t.Errorf("%+v: %v, want a config error", opts, err)
+		}
+	}
+	c, err := New(Options{APIKey: testKey, Endpoint: "localhost:50051", Insecure: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = c.Close()
+}
+
+func TestResource(t *testing.T) {
+	if got, err := Resource("projects", "p1", "docs", "a/b c"); err != nil || got != "/projects/p1/docs/a%2Fb%20c" {
+		t.Fatal(got, err)
+	}
+	for name, segs := range map[string][]string{"none": nil, "empty segment": {"docs", ""}, "too long": {strings.Repeat("x", MaxResourceURILength)}} {
+		if got, err := Resource(segs...); !errors.Is(err, ErrValidation) || got != "" {
+			t.Errorf("%s: Resource = %q, %v; want a validation error", name, got, err)
+		}
+	}
+	func() {
+		defer func() {
+			if recover() == nil {
+				t.Error("MustResource() did not panic")
+			}
+		}()
+		MustResource()
+	}()
 	if got := EncodeSegment("x(1)*!'~._-é"); got != "x%281%29%2A%21%27~._-%C3%A9" {
 		t.Fatal(got)
 	}
-	if err := ValidateResourceURI(Resource("docs", "")); err == nil {
+	if err := ValidateResourceURI("/docs/"); err == nil {
 		t.Fatal("empty segment accepted")
 	}
 	for _, ok := range []string{"/a", "/a/b/c", "/tenants/_/docs", "/a%2Fb"} {

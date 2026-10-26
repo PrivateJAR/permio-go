@@ -112,13 +112,18 @@ func memberInputs(principals []string) ([]string, error) {
 			return nil, invalid("principal IDs must not be empty")
 		}
 	}
+	if len(principals) > MaxBatch {
+		// One call per request: splitting into several writes could leave the
+		// group half changed when a later write fails.
+		return nil, invalid("at most %d principals per call, got %d", MaxBatch, len(principals))
+	}
 	return principals, nil
 }
 
-// AddMembers adds principals to a group, 100 per call. Principals that were
+// AddMembers adds up to [MaxBatch] (100) principals to a group in one write;
+// more fail with [KindValidation] (split them yourself). Principals that were
 // already members are reported in Unchanged. Group principals ("group:...")
-// are rejected, because groups cannot be nested. On error, the result holds
-// the changes made by the calls that succeeded.
+// are rejected, because groups cannot be nested.
 func (g *Groups) AddMembers(ctx context.Context, name string, principals []string) (*MembershipChange, error) {
 	project, slug, err := g.prep(name)
 	if err != nil {
@@ -131,20 +136,19 @@ func (g *Groups) AddMembers(ctx context.Context, name string, principals []strin
 	if slices.ContainsFunc(principals, func(p string) bool { return strings.HasPrefix(p, GroupPrefix) }) {
 		return nil, invalid("groups cannot contain groups")
 	}
-	out := &MembershipChange{Changed: []string{}, Unchanged: []string{}}
-	for chunk := range slices.Chunk(principals, MaxBatch) {
-		res, err := g.c.permissions.AddGroupMembers(ctx, &pb.AddGroupMembersRequest{ProjectName: project, Name: slug, PrincipalIds: chunk})
-		if err != nil {
-			return out, err
-		}
-		out.Changed = append(out.Changed, res.GetAddedPrincipalIds()...)
-		out.Unchanged = append(out.Unchanged, res.GetExistingPrincipalIds()...)
+	res, err := g.c.permissions.AddGroupMembers(ctx, &pb.AddGroupMembersRequest{ProjectName: project, Name: slug, PrincipalIds: principals})
+	if err != nil {
+		return nil, err
 	}
-	return out, nil
+	return &MembershipChange{
+		Changed:   append([]string{}, res.GetAddedPrincipalIds()...),
+		Unchanged: append([]string{}, res.GetExistingPrincipalIds()...),
+	}, nil
 }
 
-// RemoveMembers removes principals from a group, 100 per call. Principals that
-// were not members are reported in Unchanged.
+// RemoveMembers removes up to [MaxBatch] (100) principals from a group in one
+// write; more fail with [KindValidation]. Principals that were not members are
+// reported in Unchanged.
 func (g *Groups) RemoveMembers(ctx context.Context, name string, principals []string) (*MembershipChange, error) {
 	project, slug, err := g.prep(name)
 	if err != nil {
@@ -154,16 +158,14 @@ func (g *Groups) RemoveMembers(ctx context.Context, name string, principals []st
 	if err != nil {
 		return nil, err
 	}
-	out := &MembershipChange{Changed: []string{}, Unchanged: []string{}}
-	for chunk := range slices.Chunk(principals, MaxBatch) {
-		res, err := g.c.permissions.RemoveGroupMembers(ctx, &pb.RemoveGroupMembersRequest{ProjectName: project, Name: slug, PrincipalIds: chunk})
-		if err != nil {
-			return out, err
-		}
-		out.Changed = append(out.Changed, res.GetRemovedPrincipalIds()...)
-		out.Unchanged = append(out.Unchanged, res.GetNotMemberPrincipalIds()...)
+	res, err := g.c.permissions.RemoveGroupMembers(ctx, &pb.RemoveGroupMembersRequest{ProjectName: project, Name: slug, PrincipalIds: principals})
+	if err != nil {
+		return nil, err
 	}
-	return out, nil
+	return &MembershipChange{
+		Changed:   append([]string{}, res.GetRemovedPrincipalIds()...),
+		Unchanged: append([]string{}, res.GetNotMemberPrincipalIds()...),
+	}, nil
 }
 
 // ListMembers iterates a group's members, ordered by principal ID. opts may be

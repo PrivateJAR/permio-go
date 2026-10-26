@@ -22,7 +22,9 @@ client, err := permio.New(permio.Options{APIKey: os.Getenv("PERMIO_API_KEY"), Pr
 if err != nil { log.Fatal(err) }
 defer client.Close()
 
-ok, err := client.Check(ctx, userID, "docs.read", permio.Resource("docs", docID))
+resource, err := permio.Resource("docs", docID) // "/docs/<encoded docID>"
+if err != nil { log.Fatal(err) }
+ok, err := client.Check(ctx, userID, "docs.read", resource)
 ```
 
 A denial is `false` with a nil error. An error means the check could not be
@@ -45,6 +47,9 @@ client, err := permio.New(permio.Options{
   whether a key exists: use `client.WhoAmI(ctx)` to verify it at startup and to
   learn its project and access level (`check` or `full`).
 - `Endpoint` takes `host:port` or a URL (`https://dev-api.perms.io`).
+  Plaintext (`Insecure: true` or an `http://` URL) is only allowed to
+  `localhost`, `*.localhost` and loopback addresses, since the API key would
+  otherwise cross the network in clear; anything else fails in `New`.
 - `client.WithProject("other")` returns a client for another project that
   shares the connection.
 - Set an overall deadline (across retries) with the context.
@@ -72,7 +77,9 @@ allowed, err := client.BatchCheck(ctx, principal, []string{"docs.read"}, uris) /
 
 Build resource URIs with `permio.Resource("projects", id, "docs", docID)`,
 which percent-encodes each segment so IDs containing `/` stay one segment. Use
-the same helper when granting and when checking.
+the same helper when granting and when checking. It returns an error of kind
+`KindValidation` for no segments (never `"/"`, which would cover everything)
+or an empty segment; `permio.MustResource` panics instead, for literals.
 
 ### Filtering lists
 
@@ -110,7 +117,7 @@ Permission and role CRUD: `CreatePermission`, `GetPermission`,
 ```go
 g := client.Groups()
 g.Create(ctx, "editors", "Document editors")
-g.AddMembers(ctx, "editors", []string{"user-1", "user-2"})
+g.AddMembers(ctx, "editors", []string{"user-1", "user-2"}) // at most 100 per call
 client.Grant(ctx, permio.GrantRequest{Principal: permio.GroupPrincipal("editors"), Resource: "/docs", Permissions: []string{"docs.write"}})
 g.ListMembers(ctx, "editors", nil)
 g.ListForPrincipal(ctx, "user-1", nil)

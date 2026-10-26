@@ -421,12 +421,13 @@ func TestPagination(t *testing.T) {
 		t.Fatalf("pages fetched: %v", limits)
 	}
 
-	// A repeated cursor ends the listing instead of looping.
+	// A repeated cursor is an error, not a quiet end of a partial listing (and
+	// does not loop).
 	s.listPermissions = func(context.Context, *pb.ListPermissionsRequest) (*pb.ListPermissionsResponse, error) {
 		return &pb.ListPermissionsResponse{Permissions: []*pb.Permission{{Name: "x"}}, Pagination: &paginationv1.PaginationResponse{NextCursor: "same"}}, nil
 	}
-	if all, err := Collect(c.ListPermissions(ctx, nil)); err != nil || len(all) != 2 {
-		t.Fatalf("repeated cursor: %d items, %v", len(all), err)
+	if all, err := Collect(c.ListPermissions(ctx, nil)); err == nil || KindOf(err) != KindOther || len(all) != 2 {
+		t.Fatalf("repeated cursor: %d items, %v; want an error after 2 items", len(all), err)
 	}
 
 	// An error is yielded once and ends the iteration.
@@ -459,7 +460,7 @@ func TestGrantRevoke(t *testing.T) {
 		},
 	}
 	c := start(t, s, Options{})
-	req := GrantRequest{Principal: GroupPrincipal("eds"), Resource: Resource("docs", "42"), Permissions: []string{"a", "b", "a"}, Roles: []string{"r1"}}
+	req := GrantRequest{Principal: GroupPrincipal("eds"), Resource: MustResource("docs", "42"), Permissions: []string{"a", "b", "a"}, Roles: []string{"r1"}}
 	if err := c.Grant(ctx, req); err != nil {
 		t.Fatal(err)
 	}
@@ -515,9 +516,21 @@ func TestGroups(t *testing.T) {
 	for i := range 120 {
 		many = append(many, fmt.Sprintf("u%d", i))
 	}
-	res, err := c.Groups().AddMembers(ctx, "editors", many)
-	if err != nil || len(res.Changed) != 120 || len(added) != 2 {
-		t.Fatalf("AddMembers = %d, %v (%d calls)", len(res.Changed), err, len(added))
+	// More than 100 principals is rejected before any write, so a failure
+	// cannot leave the group half changed.
+	if _, err := c.Groups().AddMembers(ctx, "editors", many); !errors.Is(err, ErrValidation) {
+		t.Fatalf("AddMembers(120) = %v, want a validation error", err)
+	}
+	if _, err := c.Groups().RemoveMembers(ctx, "editors", many); !errors.Is(err, ErrValidation) {
+		t.Fatalf("RemoveMembers(120) = %v, want a validation error", err)
+	}
+	if len(added) != 0 {
+		t.Fatalf("%d writes reached the server", len(added))
+	}
+	// Duplicates are dropped before counting.
+	res, err := c.Groups().AddMembers(ctx, "editors", append(many[:100:100], many[:20]...))
+	if err != nil || len(res.Changed) != 100 || len(added) != 1 {
+		t.Fatalf("AddMembers = %v, %v (%d calls)", res, err, len(added))
 	}
 	members, err := Collect(c.Groups().ListMembers(ctx, "editors", nil))
 	if err != nil || len(members) != 1 || members[0].PrincipalID != "bob" {
@@ -562,17 +575,167 @@ func TestListAccessAndWhoHasAccess(t *testing.T) {
 	}
 }
 
-func TestCreatePermissionClash(t *testing.T) {
+func TestCreatePermissionErrorsMapDirectly(t *testing.T) {
+	gets := 0
+	code := codes.AlreadyExists
 	s := &fakeServer{
 		createPermission: func(context.Context, *pb.CreatePermissionRequest) (*pb.Permission, error) {
-			return nil, status.Error(codes.Internal, "failed to create permission")
+			return nil, status.Error(code, "a permission named \"docs.read\" already exists")
 		},
 		getPermission: func(_ context.Context, r *pb.GetPermissionRequest) (*pb.Permission, error) {
-			return &pb.Permission{Name: r.GetName(), Description: "old"}, nil
+			gets++
+			return &pb.Permission{Name: r.GetName()}, nil
+		},
+		deletePermission: func(context.Context, *pb.DeletePermissionRequest) (*emptypb.Empty, error) {
+			return nil, status.Error(codes.Internal, "failed to delete permission")
 		},
 	}
 	c := start(t, s, Options{})
 	if _, err := c.CreatePermission(ctx, "docs.read", "new"); !errors.Is(err, ErrAlreadyExists) {
 		t.Fatalf("err = %v", err)
+	}
+	code = codes.Internal
+	if _, err := c.CreatePermission(ctx, "docs.read", "new"); KindOf(err) != KindOther || status.Code(err) != codes.Internal {
+		t.Fatalf("err = %v", err)
+	}
+	if err := c.DeletePermission(ctx, "docs.read"); status.Code(err) != codes.Internal {
+		t.Fatalf("delete err = %v", err)
+	}
+	if gets != 0 {
+		t.Fatalf("made %d extra GetPermission calls", gets)
+	}
+}
+
+func TestSDKErrorsNeverReportOK(t *testing.T) {
+	c := start(t, &fakeServer{}, Options{})
+	_, cfgErr := c.WithProject("").Check(ctx, "u", "p", "/a")
+	denied := deniedError("alice", []MissingPermission{{Resource: "/a", Permissions: []string{"p"}}})
+	for _, tc := range []struct {
+		err  error
+		kind Kind
+		code codes.Code
+	}{
+		{cfgErr, KindConfig, codes.FailedPrecondition},
+		{denied, KindDenied, codes.PermissionDenied},
+		{invalid("bad"), KindValidation, codes.InvalidArgument},
+		{&Error{Kind: KindOther, Message: "zero code"}, KindOther, codes.Unknown},
+	} {
+		if !errors.Is(tc.err, tc.kind) {
+			t.Errorf("%v: kind = %s, want %s", tc.err, KindOf(tc.err), tc.kind)
+		}
+		st, ok := status.FromError(tc.err)
+		if !ok || st.Code() != tc.code || status.Code(tc.err) == codes.OK {
+			t.Errorf("%v: status code = %v, want %v", tc.err, st.Code(), tc.code)
+		}
+	}
+	// Denied stays distinct from the API's own PermissionDenied (KindPermission).
+	if errors.Is(denied, ErrPermission) {
+		t.Error("a denied check matched ErrPermission")
+	}
+}
+
+func TestCancelDuringRetryBackoff(t *testing.T) {
+	cctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	s := &fakeServer{check: func(context.Context, *pb.CheckPermissionRequest) (*pb.CheckPermissionResponse, error) {
+		// Cancel shortly after the first failure, while the client is waiting
+		// out its (long) backoff.
+		time.AfterFunc(20*time.Millisecond, cancel)
+		return nil, status.Error(codes.Unavailable, "down")
+	}}
+	c := start(t, s, Options{Retry: RetryOptions{MaxRetries: 3, BaseDelay: 10 * time.Second, MaxDelay: 10 * time.Second}})
+	began := time.Now()
+	_, err := c.Check(cctx, "u", "p", "/a")
+	if took := time.Since(began); took > 5*time.Second {
+		t.Fatalf("Check took %s; the backoff ignored cancellation", took)
+	}
+	if !errors.Is(err, context.Canceled) || status.Code(err) != codes.Canceled {
+		t.Fatalf("err = %v, want a cancellation error", err)
+	}
+	if n := s.count(mCheck); n != 1 {
+		t.Fatalf("attempts = %d, want 1", n)
+	}
+}
+
+func TestListAccessAndWhoHasAccessFollowEveryPage(t *testing.T) {
+	var accessCursors, whoCursors []string
+	cursorOf := func(p *paginationv1.PaginationRequest) string {
+		if p.Cursor == nil {
+			return "<first>"
+		}
+		return p.GetCursor()
+	}
+	s := &fakeServer{
+		listAccess: func(_ context.Context, r *pb.ListAccessRequest) (*pb.ListAccessResponse, error) {
+			cur := cursorOf(r.GetPagination())
+			accessCursors = append(accessCursors, cur)
+			switch cur {
+			case "<first>":
+				return &pb.ListAccessResponse{Scopes: []*pb.AccessScope{{Uri: "/docs/1", Scope: pb.AccessScopeKind_ACCESS_SCOPE_KIND_SUBTREE}},
+					Pagination: &paginationv1.PaginationResponse{NextCursor: "c2"}}, nil
+			case "c2":
+				return &pb.ListAccessResponse{Scopes: []*pb.AccessScope{{Uri: "/docs/2", Scope: pb.AccessScopeKind_ACCESS_SCOPE_KIND_EXACT}},
+					Pagination: &paginationv1.PaginationResponse{NextCursor: "c3"}}, nil
+			default:
+				return &pb.ListAccessResponse{Scopes: []*pb.AccessScope{{Uri: "/docs/_/public", Scope: pb.AccessScopeKind_ACCESS_SCOPE_KIND_PATTERN}},
+					Pagination: &paginationv1.PaginationResponse{}}, nil
+			}
+		},
+		whoHasAccess: func(_ context.Context, r *pb.ListPrincipalsWithAccessRequest) (*pb.ListPrincipalsWithAccessResponse, error) {
+			cur := cursorOf(r.GetPagination())
+			whoCursors = append(whoCursors, cur)
+			direct := func(id string) *pb.PrincipalAccess {
+				return &pb.PrincipalAccess{PrincipalId: id, Via: []*pb.AccessGrant{{ResourceUri: "/docs", Inherited: true,
+					Match: pb.AccessGrantMatch_ACCESS_GRANT_MATCH_ANCESTOR, Source: &pb.AccessGrant_Direct{Direct: &pb.AccessGrantDirect{}}}}}
+			}
+			switch cur {
+			case "<first>":
+				return &pb.ListPrincipalsWithAccessResponse{Principals: []*pb.PrincipalAccess{direct("a"), direct("b")},
+					Pagination: &paginationv1.PaginationResponse{NextCursor: "p2"}}, nil
+			case "p2":
+				return &pb.ListPrincipalsWithAccessResponse{Principals: []*pb.PrincipalAccess{direct("c")},
+					Pagination: &paginationv1.PaginationResponse{NextCursor: "p3"}}, nil
+			default:
+				return &pb.ListPrincipalsWithAccessResponse{Principals: []*pb.PrincipalAccess{direct("d")}}, nil
+			}
+		},
+	}
+	c := start(t, s, Options{})
+	a, err := c.ListAccess(ctx, "alice", "docs.read", "/docs")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(accessCursors, []string{"<first>", "c2", "c3"}) {
+		t.Fatalf("ListAccess cursors = %v", accessCursors)
+	}
+	if len(a.Scopes) != 3 || !a.Allows("/docs/1/x") || !a.Allows("/docs/2") || a.Allows("/docs/2/x") || !a.Allows("/docs/7/public") {
+		t.Fatalf("scopes = %+v", a.Scopes)
+	}
+	entries, err := c.WhoHasAccess(ctx, "/docs/1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(whoCursors, []string{"<first>", "p2", "p3"}) {
+		t.Fatalf("WhoHasAccess cursors = %v", whoCursors)
+	}
+	var got []string
+	for _, e := range entries {
+		got = append(got, e.Principal)
+	}
+	if !reflect.DeepEqual(got, []string{"a", "b", "c", "d"}) {
+		t.Fatalf("principals = %v", got)
+	}
+
+	// A failing later page fails the whole call rather than returning a
+	// partial answer.
+	s.whoHasAccess = func(_ context.Context, r *pb.ListPrincipalsWithAccessRequest) (*pb.ListPrincipalsWithAccessResponse, error) {
+		if r.GetPagination().Cursor == nil {
+			return &pb.ListPrincipalsWithAccessResponse{Principals: []*pb.PrincipalAccess{{PrincipalId: "a"}},
+				Pagination: &paginationv1.PaginationResponse{NextCursor: "p2"}}, nil
+		}
+		return nil, status.Error(codes.PermissionDenied, "no")
+	}
+	if entries, err := c.WhoHasAccess(ctx, "/docs/1", nil); !errors.Is(err, ErrPermission) || entries != nil {
+		t.Fatalf("WhoHasAccess = %v, %v", entries, err)
 	}
 }

@@ -116,7 +116,9 @@ func (a *AccessScopes) Allows(uri string) bool {
 
 // Prefixes returns the subtree scopes' URIs, dropping any already covered by a
 // shorter one. A prefix p stands for p and everything below it: match
-// `path = p OR path LIKE p + "/%"`.
+// `path = p OR starts_with(path, p || '/')` (PostgreSQL; elsewhere use a
+// literal prefix test such as `left(path, length(p) + 1) = p || '/'`). Avoid
+// `LIKE p || '/%'`: "_" and "%" are LIKE wildcards and may occur in URIs.
 func (a *AccessScopes) Prefixes() []string {
 	var subtrees []string
 	for _, s := range a.Scopes {

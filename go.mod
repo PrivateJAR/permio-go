@@ -2,6 +2,11 @@ module github.com/PrivateJAR/permio-go
 
 go 1.24
 
+// v0.0.1 to v0.0.18 contained only the generated gRPC stubs under proto/, not
+// the permio SDK package. Retracting them makes `go get ...@latest` skip them
+// once a later version that carries this directive is published.
+retract [v0.0.1, v0.0.18]
+
 require (
 	github.com/envoyproxy/protoc-gen-validate v1.2.1
 	google.golang.org/genproto/googleapis/api v0.0.0-20250124145028-65684f501c47
