@@ -223,15 +223,16 @@ project (`PERMIO_PROJECT`, default: the key's own project). It uses fixed
 
 The `proto/` directory is generated from
 [PrivateJAR/proto](https://github.com/PrivateJAR/proto) by its release
-workflow (`scripts/assemble-sdk.sh go`). Do not edit it by hand.
+workflow, which opens a `regen/<tag>` pull request here that replaces only
+`proto/`. Do not edit it by hand.
 
 ## Releasing
 
 Go needs no publish step: a version exists once its `v*` tag is pushed, and
 the Go module proxy fetches it on first request. The `Release` workflow runs
 the tests on a pushed tag and asks proxy.golang.org for the version so it is
-cached and shows on pkg.go.dev straight away. Tags are created by the proto
-repository's release workflow.
+cached and shows on pkg.go.dev straight away. Tags are pushed by hand, usually
+after merging a `regen/<tag>` pull request.
 
 ## Licence
 
