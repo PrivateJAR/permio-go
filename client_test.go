@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -233,6 +234,9 @@ func TestPerAttemptTimeout(t *testing.T) {
 		select {
 		case <-time.After(2 * time.Second):
 		case <-ctx.Done():
+			// The propagated deadline can fire here before the client's own
+			// timer; answering success would race the client-side timeout.
+			return nil, status.FromContextError(ctx.Err()).Err()
 		}
 		return &pb.CheckPermissionResponse{Passed: true}, nil
 	}}
@@ -337,9 +341,12 @@ func TestRateLimit(t *testing.T) {
 }
 
 func TestBatchCheck(t *testing.T) {
+	var mu sync.Mutex
 	var calls [][]string
 	s := &fakeServer{batchCheck: func(_ context.Context, r *pb.BatchCheckRequest) (*pb.BatchCheckResponse, error) {
+		mu.Lock()
 		calls = append(calls, r.GetResourceUris())
+		mu.Unlock()
 		res := &pb.BatchCheckResponse{}
 		// Answer in reverse order: the SDK must return request order.
 		for i := len(r.GetResourceUris()) - 1; i >= 0; i-- {
@@ -363,7 +370,8 @@ func TestBatchCheck(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(calls) != 2 || len(calls[0]) != 100 || len(calls[1]) != 50 {
+	// The two chunks run concurrently, so they may arrive in either order.
+	if len(calls) != 2 || len(calls[0])+len(calls[1]) != 150 || max(len(calls[0]), len(calls[1])) != 100 {
 		t.Fatalf("chunks = %d", len(calls))
 	}
 	if len(got) != 150 || got[0].Resource != "/docs/0" || !got[0].Allowed || got[1].Allowed || !reflect.DeepEqual(got[1].Missing, []string{"docs.read"}) {

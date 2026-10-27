@@ -38,6 +38,7 @@ client, err := permio.New(permio.Options{
 	Endpoint: permio.DevEndpoint,    // default: permio.DefaultEndpoint (api.perms.io:443)
 	Project:  "my-app",              // default project_name
 	Timeout:  5 * time.Second,       // per attempt; default 10s, negative disables
+	ListTimeout: 30 * time.Second,   // per attempt for each list page; default: Timeout
 	Retry:    permio.RetryOptions{MaxRetries: 3}, // default 2, negative disables
 })
 ```
@@ -75,6 +76,13 @@ client.Assert(ctx, principal, "docs.read", resource)                    // error
 allowed, err := client.BatchCheck(ctx, principal, []string{"docs.read"}, uris) // map[uri]bool, one call per 100
 ```
 
+`BatchCheck` sends its resources in requests of 100, at most 4 at a time, and
+returns results in request order; the first failing request stops the rest and
+its error is returned. It takes at most 10,000 resources per call (counted
+before duplicates are removed); more is a `KindValidation` error. Raise the cap
+with `permio.BatchCheckOptions{MaxResources: n}` as a last argument, or split
+the list.
+
 Build resource URIs with `permio.Resource("projects", id, "docs", docID)`,
 which percent-encodes each segment so IDs containing `/` stay one segment. Use
 the same helper when granting and when checking. It returns an error of kind
@@ -92,6 +100,33 @@ access, err := client.ListAccess(ctx, userID, "docs.read", "/docs")
 
 who, err := client.WhoHasAccess(ctx, "/docs/42", &permio.WhoHasAccessOptions{Permission: "docs.read"})
 ```
+
+### Large answers: caps and streaming
+
+A resource can have millions of principals with access, so `WhoHasAccess` and
+`ListAccess` collect at most 10,000 results (`permio.DefaultMaxResults`). If
+there are more, they stop fetching (at most 10,001 items are requested) and
+fail with `KindTooManyResults` / `ErrTooManyResults`; `Error.MaxResults` is the
+cap. Raise it per call, or stream with the `Seq` forms, which fetch one page at
+a time as the loop asks for more and hold nothing else in memory:
+
+```go
+who, err := client.WhoHasAccess(ctx, r, &permio.WhoHasAccessOptions{MaxResults: 50_000})
+access, err := client.ListAccess(ctx, userID, "docs.read", "/docs", permio.ListAccessOptions{MaxResults: 50_000})
+
+for entry, err := range client.WhoHasAccessSeq(ctx, r, &permio.WhoHasAccessOptions{Permission: "docs.read"}) {
+	if err != nil { return err }
+	// ...
+}
+for scope, err := range client.ListAccessSeq(ctx, userID, "docs.read", "/docs") {
+	if err != nil { return err }
+	// scope.URI == "/docs" && scope.Kind == permio.ScopeSubtree means it covers everything
+}
+```
+
+`WhoHasAccessSeq` yields entries in the API's order (by principal ID). When the
+principal holds the permission on `under` itself, `ListAccessSeq` yields exactly
+one `ScopeSubtree` scope whose URI is `under`.
 
 ## Granting and revoking
 
@@ -171,6 +206,7 @@ case errors.As(err, &perr) && perr.Kind == permio.KindRateLimited:
 | `KindTimeout` / `ErrTimeout` | `DeadlineExceeded`, per attempt or the context's |
 | `KindRateLimited` / `ErrRateLimited` | `ResourceExhausted`: the organisation's rate limit is used up; `RetryAfter` is the server's delay |
 | `KindDenied` / `ErrDenied` | Returned by `Assert`/`AssertAll` when the principal lacks the permissions |
+| `KindTooManyResults` / `ErrTooManyResults` | `WhoHasAccess` / `ListAccess` found more than `MaxResults` results; use the `Seq` form or raise the cap |
 | `KindOther` | Anything else, including cancellation |
 
 `status.Code(err)` also works on these errors.
@@ -185,6 +221,11 @@ backoff (100ms doubling, capped at 2s). A rate-limited read
 `RetryOptions.MaxDelay`; otherwise it fails with `KindRateLimited` and
 `RetryAfter` set. `ResourceExhausted` without a delay is not retried. A
 `retry-after` on `Unavailable` is used as the minimum backoff.
+
+Each page of a listing (the `List*` iterators, the `Seq` forms, `WhoHasAccess`,
+`ListAccess`) is one read under this policy, with `Options.ListTimeout` as its
+per-attempt timeout. A page that times out is retried after the backoff, never
+immediately.
 
 Writes (Create, Update, Delete, Grant, Revoke, group membership) are never
 retried. Grant and revoke converge on the server, so they are safe to repeat by
