@@ -1,5 +1,35 @@
 # Changelog
 
+## Unreleased (v0.2.0)
+
+### Changed
+
+- **Behaviour change:** `WhoHasAccess` and `ListAccess` collect at most 10,000
+  results by default. With more, they stop fetching (at most cap + 1 items are
+  requested) and fail with the new `KindTooManyResults` / `ErrTooManyResults`
+  (`Error.MaxResults` is the cap). Raise it with `MaxResults`, or use the new
+  streaming forms.
+- **Behaviour change:** `BatchCheck` / `BatchCheckDetailed` accept at most
+  10,000 resources per call (counted before de-duplication); more is a
+  `KindValidation` error.
+- `BatchCheck` sends its 100-resource requests 4 at a time instead of one after
+  another, building each request only when it is sent. Results keep request
+  order; the first failing request cancels the others and its error is
+  returned.
+
+### Added
+
+- `Client.WhoHasAccessSeq` and `Client.ListAccessSeq`: `iter.Seq2` streams that
+  fetch pages on demand, for answers of any size. A covers-all `ListAccessSeq`
+  yields one `ScopeSubtree` scope for `under`.
+- `WhoHasAccessOptions.MaxResults`; `ListAccessOptions{MaxResults}` as an
+  optional last argument of `ListAccess`; `DefaultMaxResults`.
+- `BatchCheckOptions{MaxResources}` as an optional last argument of
+  `BatchCheck` / `BatchCheckDetailed`; `DefaultMaxBatchResources`,
+  `BatchCheckConcurrency`.
+- `Options.ListTimeout`: per-attempt timeout for each list page (default: the
+  `Timeout`).
+
 ## v0.1.0
 
 First release with the hand-written SDK package.

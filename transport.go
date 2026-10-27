@@ -88,6 +88,7 @@ type resilientConn struct {
 	inner         grpc.ClientConnInterface
 	authorization string
 	timeout       time.Duration // per attempt; 0 = none
+	listTimeout   time.Duration // per attempt for list pages; 0 = none
 	retry         RetryOptions
 	sleep         func(context.Context, time.Duration) error
 }
@@ -102,9 +103,13 @@ func (c *resilientConn) Invoke(ctx context.Context, method string, args, reply a
 	}
 	for attempt := 0; ; attempt++ {
 		var header, trailer metadata.MD
+		timeout := c.timeout
+		if isListPage(ctx) {
+			timeout = c.listTimeout
+		}
 		actx, cancel := ctx, context.CancelFunc(func() {})
-		if c.timeout > 0 {
-			actx, cancel = context.WithTimeout(ctx, c.timeout)
+		if timeout > 0 {
+			actx, cancel = context.WithTimeout(ctx, timeout)
 		}
 		err := c.inner.Invoke(actx, method, args, reply, append(opts, grpc.Header(&header), grpc.Trailer(&trailer))...)
 		cancel()
@@ -117,7 +122,7 @@ func (c *resilientConn) Invoke(ctx context.Context, method string, args, reply a
 			return toError(ctx.Err(), md)
 		}
 		if actx.Err() == context.DeadlineExceeded && status.Code(err) != codes.DeadlineExceeded {
-			err = status.Errorf(codes.DeadlineExceeded, "request timed out after %s", c.timeout)
+			err = status.Errorf(codes.DeadlineExceeded, "request timed out after %s", timeout)
 		}
 		st, _ := status.FromError(err)
 		serverDelay, hasDelay := serverRetryDelay(st, md)

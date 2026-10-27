@@ -2,6 +2,7 @@ package permio
 
 import (
 	"context"
+	"iter"
 	"regexp"
 	"sort"
 	"strings"
@@ -227,48 +228,100 @@ func (a *AccessScopes) Regexp() *regexp.Regexp {
 	return regexp.MustCompile(a.RegexpSource())
 }
 
+// ListAccessOptions refines [Client.ListAccess].
+type ListAccessOptions struct {
+	// MaxResults caps how many scopes ListAccess collects. Zero means
+	// [DefaultMaxResults] (10,000); more scopes than that fail with
+	// [KindTooManyResults]. Use [Client.ListAccessSeq] to stream any number.
+	MaxResults int
+}
+
 // ListAccess answers "where may principal use permission at or below
 // under?", following every page. Access through roles and groups counts. Use
 // the result to filter lists in your database: CoversAll means no filter is
 // needed, Prefixes gives path prefixes, RegexpSource a regex, and Allows tests
 // a single URI.
 //
+// At most MaxResults scopes (default 10,000) are collected: if there are more,
+// it stops fetching and fails with [KindTooManyResults]. Pass at most one
+// opts; use [Client.ListAccessSeq] to stream larger answers.
+//
 // The API key needs permission.check on under and principal.assignment.get on
 // the principal.
-func (c *Client) ListAccess(ctx context.Context, principal, permission, under string) (*AccessScopes, error) {
-	if principal == "" {
-		return nil, invalid("principal is required")
+func (c *Client) ListAccess(ctx context.Context, principal, permission, under string, opts ...ListAccessOptions) (*AccessScopes, error) {
+	var o ListAccessOptions
+	if len(opts) > 1 {
+		return nil, invalid("pass at most one ListAccessOptions")
+	} else if len(opts) == 1 {
+		o = opts[0]
 	}
-	if permission == "" {
-		return nil, invalid("permission is required")
-	}
-	if err := ValidateResourceURI(under); err != nil {
-		return nil, err
-	}
-	project, err := c.projectName()
+	limit, err := maxResults(o.MaxResults)
 	if err != nil {
 		return nil, err
 	}
 	out := &AccessScopes{Under: under, Scopes: []AccessScope{}}
-	pages := paginate(ctx, MaxPageSize, func(ctx context.Context, p *paginationv1.PaginationRequest) ([]*pb.ListAccessResponse, string, error) {
+	for s, err := range c.listAccessSeq(ctx, principal, permission, under, limit+1, &out.CoversAll) {
+		if err != nil {
+			return nil, err
+		}
+		if len(out.Scopes) == limit {
+			return nil, tooManyResults("ListAccess", "ListAccessSeq", limit)
+		}
+		out.Scopes = append(out.Scopes, s)
+	}
+	return out, nil
+}
+
+// ListAccessSeq is the streaming form of [Client.ListAccess]: it yields every
+// scope, fetching pages as the loop asks for them, so any number of scopes
+// can be processed without holding them in memory. When the principal holds
+// the permission on under itself (CoversAll), it yields exactly one scope:
+// URI under, Kind [ScopeSubtree]. A failing page yields its error once and
+// ends the iteration.
+//
+//	for scope, err := range client.ListAccessSeq(ctx, userID, "docs.read", "/docs") {
+//		if err != nil { ... }
+//		...
+//	}
+func (c *Client) ListAccessSeq(ctx context.Context, principal, permission, under string) iter.Seq2[AccessScope, error] {
+	return c.listAccessSeq(ctx, principal, permission, under, 0, nil)
+}
+
+func (c *Client) listAccessSeq(ctx context.Context, principal, permission, under string, limit int, coversAll *bool) iter.Seq2[AccessScope, error] {
+	if principal == "" {
+		return failed[AccessScope](invalid("principal is required"))
+	}
+	if permission == "" {
+		return failed[AccessScope](invalid("permission is required"))
+	}
+	if err := ValidateResourceURI(under); err != nil {
+		return failed[AccessScope](err)
+	}
+	project, err := c.projectName()
+	if err != nil {
+		return failed[AccessScope](err)
+	}
+	return paginateLimit(ctx, MaxPageSize, limit, func(ctx context.Context, p *paginationv1.PaginationRequest) ([]AccessScope, string, error) {
 		res, err := c.permissions.ListAccess(ctx, &pb.ListAccessRequest{ProjectName: project, PrincipalId: principal, Permission: permission, UnderUri: under, Pagination: p})
 		if err != nil {
 			return nil, "", err
 		}
-		return []*pb.ListAccessResponse{res}, res.GetPagination().GetNextCursor(), nil
-	})
-	for res, err := range pages {
-		if err != nil {
-			return nil, err
+		scopes := make([]AccessScope, 0, len(res.GetScopes()))
+		for _, s := range res.GetScopes() {
+			scopes = append(scopes, AccessScope{URI: s.GetUri(), Kind: scopeKind(s.GetScope())})
 		}
 		if res.GetCoversAll() {
-			out.CoversAll = true
+			if coversAll != nil {
+				*coversAll = true
+			}
+			if len(scopes) == 0 {
+				// The API sends the SUBTREE scope for under; keep that contract
+				// for stream consumers even if a server omits it.
+				scopes = append(scopes, AccessScope{URI: under, Kind: ScopeSubtree})
+			}
 		}
-		for _, s := range res.GetScopes() {
-			out.Scopes = append(out.Scopes, AccessScope{URI: s.GetUri(), Kind: scopeKind(s.GetScope())})
-		}
-	}
-	return out, nil
+		return scopes, res.GetPagination().GetNextCursor(), nil
+	})
 }
 
 // AccessVia is one grant (or one role within a grant) that gives access.
@@ -308,7 +361,7 @@ func matchName(m pb.AccessGrantMatch) string {
 	}
 }
 
-// WhoHasAccessOptions refines [Client.WhoHasAccess].
+// WhoHasAccessOptions refines [Client.WhoHasAccess] and [Client.WhoHasAccessSeq].
 type WhoHasAccessOptions struct {
 	// Permission, when set, counts only grants that confer it, so a principal
 	// is listed exactly when a check of it passes through its own grants (or,
@@ -317,6 +370,11 @@ type WhoHasAccessOptions struct {
 	// ExpandGroups also lists every member of each listed group, once per
 	// group, with ViaGroup set.
 	ExpandGroups bool
+	// MaxResults caps how many entries WhoHasAccess collects. Zero means
+	// [DefaultMaxResults] (10,000); more entries than that fail with
+	// [KindTooManyResults]. Ignored by WhoHasAccessSeq, which streams any
+	// number.
+	MaxResults int
 }
 
 // WhoHasAccess answers "who has access to resource?", following every page
@@ -325,44 +383,27 @@ type WhoHasAccessOptions struct {
 // wildcard URI matching it, ordered by principal ID, with the grants that give
 // the access. opts may be nil.
 //
+// At most MaxResults entries (default 10,000) are collected: if there are
+// more, it stops fetching and fails with [KindTooManyResults]. A resource can
+// have millions of principals with access; use [Client.WhoHasAccessSeq] to
+// stream them.
+//
 // The API key needs principal.list and principal.assignment.list on the project.
 func (c *Client) WhoHasAccess(ctx context.Context, resource string, opts *WhoHasAccessOptions) ([]AccessEntry, error) {
-	if err := ValidateResourceURI(resource); err != nil {
-		return nil, err
-	}
 	if opts == nil {
 		opts = &WhoHasAccessOptions{}
 	}
-	project, err := c.projectName()
+	limit, err := maxResults(opts.MaxResults)
 	if err != nil {
 		return nil, err
 	}
-	pages := paginate(ctx, MaxPageSize, func(ctx context.Context, p *paginationv1.PaginationRequest) ([]*pb.PrincipalAccess, string, error) {
-		res, err := c.permissions.ListPrincipalsWithAccess(ctx, &pb.ListPrincipalsWithAccessRequest{
-			ProjectName: project, ResourceUri: resource, Permission: optString(opts.Permission), ExpandGroups: opts.ExpandGroups, Pagination: p,
-		})
-		if err != nil {
-			return nil, "", err
-		}
-		return res.GetPrincipals(), res.GetPagination().GetNextCursor(), nil
-	})
 	out := []AccessEntry{}
-	for pa, err := range pages {
+	for e, err := range c.whoHasAccessSeq(ctx, resource, opts, limit+1) {
 		if err != nil {
 			return nil, err
 		}
-		e := AccessEntry{Principal: pa.GetPrincipalId(), IsGroup: pa.GetIsGroup(), ViaGroup: pa.GetViaGroup(), Via: []AccessVia{}}
-		for _, g := range pa.GetVia() {
-			v := AccessVia{Resource: g.GetResourceUri(), Inherited: g.GetInherited(), Match: matchName(g.GetMatch())}
-			switch src := g.GetSource().(type) {
-			case *pb.AccessGrant_Role:
-				v.Source, v.RoleID, v.RoleName = "role", src.Role.GetId(), src.Role.GetName()
-			case *pb.AccessGrant_Direct:
-				v.Source = "direct"
-			default:
-				v.Source = "unknown"
-			}
-			e.Via = append(e.Via, v)
+		if len(out) == limit {
+			return nil, tooManyResults("WhoHasAccess", "WhoHasAccessSeq", limit)
 		}
 		out = append(out, e)
 	}
@@ -373,4 +414,62 @@ func (c *Client) WhoHasAccess(ctx context.Context, resource string, opts *WhoHas
 		return out[i].ViaGroup < out[j].ViaGroup
 	})
 	return out, nil
+}
+
+// WhoHasAccessSeq is the streaming form of [Client.WhoHasAccess]: it yields
+// every entry in the API's order (by principal ID), fetching pages as the loop
+// asks for them, so millions of principals can be processed without holding
+// them in memory. opts may be nil; MaxResults is ignored. A failing page
+// yields its error once and ends the iteration.
+//
+//	for entry, err := range client.WhoHasAccessSeq(ctx, resource, nil) {
+//		if err != nil { ... }
+//		...
+//	}
+func (c *Client) WhoHasAccessSeq(ctx context.Context, resource string, opts *WhoHasAccessOptions) iter.Seq2[AccessEntry, error] {
+	if opts == nil {
+		opts = &WhoHasAccessOptions{}
+	}
+	return c.whoHasAccessSeq(ctx, resource, opts, 0)
+}
+
+func (c *Client) whoHasAccessSeq(ctx context.Context, resource string, opts *WhoHasAccessOptions, limit int) iter.Seq2[AccessEntry, error] {
+	if err := ValidateResourceURI(resource); err != nil {
+		return failed[AccessEntry](err)
+	}
+	project, err := c.projectName()
+	if err != nil {
+		return failed[AccessEntry](err)
+	}
+	permission, expand := opts.Permission, opts.ExpandGroups
+	return paginateLimit(ctx, MaxPageSize, limit, func(ctx context.Context, p *paginationv1.PaginationRequest) ([]AccessEntry, string, error) {
+		res, err := c.permissions.ListPrincipalsWithAccess(ctx, &pb.ListPrincipalsWithAccessRequest{
+			ProjectName: project, ResourceUri: resource, Permission: optString(permission), ExpandGroups: expand, Pagination: p,
+		})
+		if err != nil {
+			return nil, "", err
+		}
+		out := make([]AccessEntry, 0, len(res.GetPrincipals()))
+		for _, pa := range res.GetPrincipals() {
+			out = append(out, toAccessEntry(pa))
+		}
+		return out, res.GetPagination().GetNextCursor(), nil
+	})
+}
+
+func toAccessEntry(pa *pb.PrincipalAccess) AccessEntry {
+	e := AccessEntry{Principal: pa.GetPrincipalId(), IsGroup: pa.GetIsGroup(), ViaGroup: pa.GetViaGroup(), Via: []AccessVia{}}
+	for _, g := range pa.GetVia() {
+		v := AccessVia{Resource: g.GetResourceUri(), Inherited: g.GetInherited(), Match: matchName(g.GetMatch())}
+		switch src := g.GetSource().(type) {
+		case *pb.AccessGrant_Role:
+			v.Source, v.RoleID, v.RoleName = "role", src.Role.GetId(), src.Role.GetName()
+		case *pb.AccessGrant_Direct:
+			v.Source = "direct"
+		default:
+			v.Source = "unknown"
+		}
+		e.Via = append(e.Via, v)
+	}
+	return e
 }

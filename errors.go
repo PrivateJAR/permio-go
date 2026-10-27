@@ -49,6 +49,11 @@ const (
 	// KindDenied: returned by the Assert methods when the principal does not
 	// hold the permissions. A normal authorization outcome, not an API failure.
 	KindDenied Kind = "denied"
+	// KindTooManyResults: a collect-all call such as [Client.WhoHasAccess] or
+	// [Client.ListAccess] found more results than its MaxResults cap. Use the
+	// streaming form ([Client.WhoHasAccessSeq], [Client.ListAccessSeq]) or
+	// raise MaxResults. [Error.MaxResults] is the cap.
+	KindTooManyResults Kind = "too_many_results"
 	// KindOther: anything else, including cancellation by the caller.
 	KindOther Kind = "error"
 )
@@ -58,16 +63,17 @@ func (k Kind) Error() string { return "permio: " + string(k) }
 
 // Sentinels for errors.Is. Each is the matching Kind.
 var (
-	ErrConfig        error = KindConfig
-	ErrAuth          error = KindAuth
-	ErrPermission    error = KindPermission
-	ErrValidation    error = KindValidation
-	ErrNotFound      error = KindNotFound
-	ErrAlreadyExists error = KindAlreadyExists
-	ErrUnavailable   error = KindUnavailable
-	ErrTimeout       error = KindTimeout
-	ErrRateLimited   error = KindRateLimited
-	ErrDenied        error = KindDenied
+	ErrConfig         error = KindConfig
+	ErrAuth           error = KindAuth
+	ErrPermission     error = KindPermission
+	ErrValidation     error = KindValidation
+	ErrNotFound       error = KindNotFound
+	ErrAlreadyExists  error = KindAlreadyExists
+	ErrUnavailable    error = KindUnavailable
+	ErrTimeout        error = KindTimeout
+	ErrRateLimited    error = KindRateLimited
+	ErrDenied         error = KindDenied
+	ErrTooManyResults error = KindTooManyResults
 )
 
 // MissingPermission lists permissions missing on one resource.
@@ -83,8 +89,8 @@ type Error struct {
 	// Kind classifies the error.
 	Kind Kind
 	// Code is the gRPC status code. Errors raised by the SDK itself use
-	// FailedPrecondition (config), PermissionDenied (denied) and
-	// InvalidArgument (its own input checks). It is never codes.OK.
+	// FailedPrecondition (config), PermissionDenied (denied), InvalidArgument
+	// (its own input checks) and OutOfRange (too many results). It is never codes.OK.
 	Code codes.Code
 	// Message is the server's (or SDK's) message.
 	Message string
@@ -98,6 +104,8 @@ type Error struct {
 	// retry-after header), for KindRateLimited and sometimes KindUnavailable.
 	// Zero when the server gave none.
 	RetryAfter time.Duration
+	// MaxResults is the cap that was exceeded, for KindTooManyResults.
+	MaxResults int
 	// Metadata holds the response headers and trailers sent with the error.
 	Metadata metadata.MD
 
@@ -240,6 +248,11 @@ func configError(format string, args ...any) error {
 
 func invalid(format string, args ...any) error {
 	return &Error{Kind: KindValidation, Code: codes.InvalidArgument, Message: fmt.Sprintf(format, args...)}
+}
+
+func tooManyResults(method, stream string, limit int) error {
+	return &Error{Kind: KindTooManyResults, Code: codes.OutOfRange, MaxResults: limit,
+		Message: fmt.Sprintf("%s found more than %d results; use %s to stream them, or raise MaxResults", method, limit, stream)}
 }
 
 func inconsistent(format string, args ...any) error {

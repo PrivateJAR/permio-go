@@ -61,6 +61,10 @@ type Options struct {
 	// Timeout is the per-attempt timeout. Zero means [DefaultTimeout]; a
 	// negative value disables it. Set an overall deadline with the context.
 	Timeout time.Duration
+	// ListTimeout is the per-attempt timeout for each page request made by
+	// the listing helpers (iterators, Seq forms, WhoHasAccess, ListAccess).
+	// Zero means the same as Timeout; a negative value disables it.
+	ListTimeout time.Duration
 	// Retry configures retries of idempotent reads. Writes are never retried.
 	Retry RetryOptions
 	// UserAgent is prepended to grpc-go's user agent.
@@ -100,9 +104,16 @@ func New(opts Options) (*Client, error) {
 	} else if timeout < 0 {
 		timeout = 0
 	}
+	listTimeout := opts.ListTimeout
+	if listTimeout == 0 {
+		listTimeout = timeout
+	} else if listTimeout < 0 {
+		listTimeout = 0
+	}
 	rc := &resilientConn{
 		authorization: "Bearer " + key,
 		timeout:       timeout,
+		listTimeout:   listTimeout,
 		retry:         opts.Retry.withDefaults(),
 		sleep:         sleepCtx,
 	}
