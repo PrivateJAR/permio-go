@@ -35,7 +35,8 @@ import (
 const (
 	// DefaultEndpoint is the production API.
 	DefaultEndpoint = "api.perms.io:443"
-	// DevEndpoint is the development API.
+	// DevEndpoint is the API for Permio's internal development; use
+	// [DefaultEndpoint].
 	DevEndpoint = "dev-api.perms.io:443"
 	// DefaultTimeout is the default per-attempt timeout.
 	DefaultTimeout = 10 * time.Second
@@ -49,7 +50,7 @@ type Options struct {
 	// empty, the PERMIO_API_KEY environment variable is used.
 	APIKey string
 	// Endpoint is the API's "host:port" ([DefaultEndpoint] when empty), or a
-	// URL such as "https://dev-api.perms.io". "http://" URLs dial without TLS,
+	// URL such as "https://api.perms.io". "http://" URLs dial without TLS,
 	// which is only allowed to a local host (see Insecure).
 	// Ignored when Conn is set.
 	Endpoint string
