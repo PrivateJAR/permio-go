@@ -1,4 +1,5 @@
-// Package permio is the Go SDK for perms.io, a permissions (RBAC) service.
+// Package permio is the official Go SDK for perms.io, a hosted authorization
+// service for RBAC and fine-grained permissions in multi-tenant apps.
 //
 // A [Client] wraps the generated gRPC clients with API key auth, per-attempt
 // timeouts, retries for idempotent reads, typed errors ([Error]) and helpers
