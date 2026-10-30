@@ -1,6 +1,14 @@
 # permio-go
 
-The Go SDK for [perms.io](https://perms.io), a permissions (RBAC) service.
+[![Go Reference](https://pkg.go.dev/badge/github.com/PrivateJAR/permio-go.svg)](https://pkg.go.dev/github.com/PrivateJAR/permio-go)
+[![Version](https://img.shields.io/github/v/tag/PrivateJAR/permio-go?sort=semver&label=version)](https://github.com/PrivateJAR/permio-go/tags)
+[![License](https://img.shields.io/github/license/PrivateJAR/permio-go)](LICENSE)
+
+The official Go SDK for [perms.io](https://perms.io), a hosted authorization
+service for RBAC and fine-grained, resource-level permissions in multi-tenant
+apps. Use it to check whether a user may perform an action on a resource,
+grant and revoke roles and permissions, manage groups, and filter lists down
+to what a user can access, from any Go service.
 
 Package `permio` wraps the generated gRPC clients with API key auth,
 per-attempt timeouts, retries for idempotent reads, typed errors and helpers
@@ -273,14 +281,6 @@ The `proto/` directory is generated from
 [PrivateJAR/proto](https://github.com/PrivateJAR/proto) by its release
 workflow, which opens a `regen/<tag>` pull request here that replaces only
 `proto/`. Do not edit it by hand.
-
-## Releasing
-
-Go needs no publish step: a version exists once its `v*` tag is pushed, and
-the Go module proxy fetches it on first request. The `Release` workflow runs
-the tests on a pushed tag and asks proxy.golang.org for the version so it is
-cached and shows on pkg.go.dev straight away. Tags are pushed by hand, usually
-after merging a `regen/<tag>` pull request.
 
 ## Licence
 
