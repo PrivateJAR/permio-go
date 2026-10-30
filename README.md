@@ -43,7 +43,6 @@ answered (bad key, network, ...); treat it as "not allowed".
 ```go
 client, err := permio.New(permio.Options{
 	APIKey:   "perms_...",           // default: $PERMIO_API_KEY
-	Endpoint: permio.DevEndpoint,    // default: permio.DefaultEndpoint (api.perms.io:443)
 	Project:  "my-app",              // default project_name
 	Timeout:  5 * time.Second,       // per attempt; default 10s, negative disables
 	ListTimeout: 30 * time.Second,   // per attempt for each list page; default: Timeout
@@ -55,7 +54,8 @@ client, err := permio.New(permio.Options{
   a mistyped key fails in `New` with a config error. Only the API can tell
   whether a key exists: use `client.WhoAmI(ctx)` to verify it at startup and to
   learn its project and access level (`check` or `full`).
-- `Endpoint` takes `host:port` or a URL (`https://dev-api.perms.io`).
+- `Endpoint` takes `host:port` or a URL (`https://api.perms.io`); the default is
+  `permio.DefaultEndpoint` (`api.perms.io:443`).
   Plaintext (`Insecure: true` or an `http://` URL) is only allowed to
   `localhost`, `*.localhost` and loopback addresses, since the API key would
   otherwise cross the network in clear; anything else fails in `New`.
@@ -64,13 +64,6 @@ client, err := permio.New(permio.Options{
 - Set an overall deadline (across retries) with the context.
 - `Options.Conn` takes any `grpc.ClientConnInterface` instead of dialling, e.g.
   a bufconn connection in tests; auth, timeouts, retries and errors still apply.
-
-### Dev vs prod
-
-| Constant | Host |
-| --- | --- |
-| `permio.DefaultEndpoint` | `api.perms.io:443` (production) |
-| `permio.DevEndpoint` | `dev-api.perms.io:443` (development) |
 
 ## Checks
 
